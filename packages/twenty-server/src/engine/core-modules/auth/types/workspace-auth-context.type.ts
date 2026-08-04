@@ -1,4 +1,5 @@
 import { type RawAuthContext } from 'src/engine/core-modules/auth/types/raw-auth-context.type';
+import { type CompanyScope } from 'src/engine/twenty-orm/utils/company-scope.type';
 
 export type WorkspaceAuthContextType =
   | 'system'
@@ -23,6 +24,10 @@ export interface UserWorkspaceAuthContext extends BaseWorkspaceAuthContext {
   user: NonNullable<RawAuthContext['user']>;
   workspaceMemberId: NonNullable<RawAuthContext['workspaceMemberId']>;
   workspaceMember: NonNullable<RawAuthContext['workspaceMember']>;
+  // Which companies this person may see. Optional in the type only because the
+  // resolver may not have run; the query builder treats its absence as "sees
+  // nothing" rather than guessing.
+  companyScope?: CompanyScope;
 }
 
 export interface ApplicationWorkspaceAuthContext extends BaseWorkspaceAuthContext {

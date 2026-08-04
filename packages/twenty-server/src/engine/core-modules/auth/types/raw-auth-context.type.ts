@@ -1,3 +1,4 @@
+import { type CompanyScope } from 'src/engine/twenty-orm/utils/company-scope.type';
 import { type FlatApiKey } from 'src/engine/core-modules/api-key/types/flat-api-key.type';
 import { type FlatApplication } from 'src/engine/core-modules/application/types/flat-application.type';
 import { type FlatAuthContextUser } from 'src/engine/core-modules/auth/types/flat-auth-context-user.type';
@@ -22,4 +23,6 @@ export type RawAuthContext = {
     impersonatedUserWorkspaceId?: string;
   };
   tokenType?: JwtTokenTypeEnum;
+  // Which companies the caller may see, resolved by the auth strategy.
+  companyScope?: CompanyScope;
 };

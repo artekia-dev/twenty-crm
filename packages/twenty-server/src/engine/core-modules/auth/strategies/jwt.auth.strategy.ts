@@ -26,6 +26,7 @@ import { JWT_SUPPORTED_VERIFY_ALGORITHMS } from 'src/engine/core-modules/jwt/con
 import { JwtWrapperService } from 'src/engine/core-modules/jwt/services/jwt-wrapper.service';
 import { type FlatUserWorkspace } from 'src/engine/core-modules/user-workspace/types/flat-user-workspace.type';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
+import { CompanyScopeResolverService } from 'src/engine/core-modules/auth/services/company-scope-resolver.service';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { assertIsDefinedOrThrow, isDefined } from 'twenty-shared/utils';
 import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
@@ -40,6 +41,7 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy, 'jwt') {
     private readonly workspaceCacheService: WorkspaceCacheService,
     private readonly coreEntityCacheService: CoreEntityCacheService,
     private readonly impersonationAuthorizationService: ImpersonationAuthorizationService,
+    private readonly companyScopeResolverService: CompanyScopeResolverService,
   ) {
     const secretOrKeyProvider: SecretOrKeyProvider = (
       _request,
@@ -201,9 +203,18 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy, 'jwt') {
       ),
     );
 
+    // Resolve, once per request, which companies this person may see. Doing it
+    // here and not in the query builder is the whole point: the builder runs on
+    // every query and is synchronous, so it cannot look anything up.
+    const companyScope = await this.companyScopeResolverService.resolve({
+      workspaceId: workspace.id,
+      workspaceMemberId: workspaceMember.id,
+    });
+
     return {
       ...context,
       workspaceMember,
+      companyScope,
     };
   }
 

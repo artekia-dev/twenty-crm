@@ -1,0 +1,63 @@
+import { Injectable } from '@nestjs/common';
+
+import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
+import { type CompanyScope } from 'src/engine/twenty-orm/utils/company-scope.type';
+
+// Works out which companies a person is allowed to see.
+//
+// Runs once per request, when the workspace member is resolved, and the answer
+// travels on the auth context. The query builder cannot do this itself: it runs
+// on every query and it is synchronous.
+//
+// The model, in one paragraph. A person gets one `accesoSociedad` row per
+// company they may see, so several companies per person is the normal case and
+// not a special one. A company can be marked `veTodoElGrupo`, and that mark is
+// what opens the whole group — it lives on the parent company, so whoever is
+// given that company sees everything. Anyone with no rows sees nothing.
+@Injectable()
+export class CompanyScopeResolverService {
+  constructor(private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager) {}
+
+  async resolve({
+    workspaceId,
+    workspaceMemberId,
+  }: {
+    workspaceId: string;
+    workspaceMemberId: string;
+  }): Promise<CompanyScope> {
+    // Reading the access rows must bypass permission checks, and this is not a
+    // shortcut: the very filter being resolved here would otherwise apply to
+    // the lookup that decides it. This repository reads nothing but the access
+    // rows, and returns nothing but company ids.
+    const repository = await this.globalWorkspaceOrmManager.getRepository(
+      workspaceId,
+      'accesoSociedad',
+      { shouldBypassPermissionChecks: true },
+    );
+
+    const accesses = await repository.find({
+      where: { miembroId: workspaceMemberId },
+      relations: { sociedad: true },
+    });
+
+    if (accesses.length === 0) return { kind: 'none' };
+
+    const companies = accesses
+      .map((access) => (access as { sociedad?: { id?: string; veTodoElGrupo?: boolean } }).sociedad)
+      .filter((company): company is { id?: string; veTodoElGrupo?: boolean } =>
+        Boolean(company),
+      );
+
+    if (companies.some((company) => company.veTodoElGrupo === true)) return { kind: 'all' };
+
+    const companyIds = [
+      ...new Set(
+        companies
+          .map((company) => company.id)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0),
+      ),
+    ];
+
+    return companyIds.length > 0 ? { kind: 'some', companyIds } : { kind: 'none' };
+  }
+}
