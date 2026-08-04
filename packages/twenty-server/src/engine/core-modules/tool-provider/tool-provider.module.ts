@@ -1,6 +1,7 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { CompanyScopeResolverService } from 'src/engine/core-modules/auth/services/company-scope-resolver.service';
 import { RecordCrudModule } from 'src/engine/core-modules/record-crud/record-crud.module';
 import { TOOL_PROVIDERS } from 'src/engine/core-modules/tool-provider/constants/tool-providers.token';
 import { ActionToolProvider } from 'src/engine/core-modules/tool-provider/providers/action-tool.provider';
@@ -16,6 +17,7 @@ import { WorkflowToolProvider } from 'src/engine/core-modules/tool-provider/prov
 import { ToolExecutorService } from 'src/engine/core-modules/tool-provider/services/tool-executor.service';
 import { ToolModule } from 'src/engine/core-modules/tool/tool.module';
 import { UserEntity } from 'src/engine/core-modules/user/user.entity';
+import { RoleTargetEntity } from 'src/engine/metadata-modules/role-target/role-target.entity';
 import { AiAgentExecutionModule } from 'src/engine/metadata-modules/ai/ai-agent-execution/ai-agent-execution.module';
 import { AiModelsModule } from 'src/engine/metadata-modules/ai/ai-models/ai-models.module';
 import { FieldMetadataModule } from 'src/engine/metadata-modules/field-metadata/field-metadata.module';
@@ -66,11 +68,16 @@ import { ToolRegistryService } from './services/tool-registry.service';
     WebhookModule,
     RoleModule,
     UserRoleModule,
-    TypeOrmModule.forFeature([UserEntity]),
+    TypeOrmModule.forFeature([UserEntity, RoleTargetEntity]),
   ],
   providers: [
     ToolIndexResolver,
     ToolExecutorService,
+    // Provided here rather than imported from AuthModule on purpose: that
+    // module's graph reaches back into this one. The service holds no state,
+    // so a second instance costs nothing, and TokenModule already provides it
+    // the same way for the same reason.
+    CompanyScopeResolverService,
     ActionToolProvider,
     DashboardToolProvider,
     DatabaseToolProvider,

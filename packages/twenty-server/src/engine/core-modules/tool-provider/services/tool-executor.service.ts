@@ -15,6 +15,7 @@ import {
   AuthException,
   AuthExceptionCode,
 } from 'src/engine/core-modules/auth/auth.exception';
+import { CompanyScopeResolverService } from 'src/engine/core-modules/auth/services/company-scope-resolver.service';
 import { type WorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
 import { buildUserAuthContext } from 'src/engine/core-modules/auth/utils/build-user-auth-context.util';
 import { LogicFunctionExecutorService } from 'src/engine/core-modules/logic-function/logic-function-executor/logic-function-executor.service';
@@ -55,6 +56,7 @@ export class ToolExecutorService {
     private readonly deleteManyRecordsService: DeleteManyRecordsService,
     private readonly logicFunctionExecutorService: LogicFunctionExecutorService,
     private readonly workspaceCacheService: WorkspaceCacheService,
+    private readonly companyScopeResolverService: CompanyScopeResolverService,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
   ) {}
@@ -287,6 +289,11 @@ export class ToolExecutorService {
   }
 
   // Build authContext on demand for database CRUD operations
+  //
+  // Every surface that reaches a tool without an auth context of its own lands
+  // here: the AI chat, agent runs, MCP. What it builds is what the query
+  // builder will be handed, so anything missing from it is missing from every
+  // record the assistant can reach.
   private async buildAuthContext(
     context: ToolProviderContext,
   ): Promise<WorkspaceAuthContext> {
@@ -326,12 +333,29 @@ export class ToolExecutorService {
       );
     }
 
+    const workspace = { id: context.workspaceId } as FlatWorkspace;
+
+    // Which companies this person may see, resolved exactly as the request
+    // pipeline resolves it — so the assistant reaches what the person reaches,
+    // no more and no less.
+    //
+    // Skipping it would not leave the door open, it would close it entirely:
+    // the query builder treats a missing scope as "sees nothing" rather than
+    // guessing, so every scoped object comes back empty and the assistant
+    // reports, in good faith, that there is no such record.
+    const companyScope = await this.companyScopeResolverService.resolve({
+      workspace,
+      workspaceMemberId,
+      userWorkspaceId: context.userWorkspaceId,
+    });
+
     return buildUserAuthContext({
-      workspace: { id: context.workspaceId } as FlatWorkspace,
+      workspace,
       userWorkspaceId: context.userWorkspaceId,
       user: fromUserEntityToFlat(user),
       workspaceMemberId,
       workspaceMember,
+      companyScope,
     });
   }
 }
