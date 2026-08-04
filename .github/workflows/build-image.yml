@@ -16,7 +16,13 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # An ARM runner because the Coolify box is aarch64 (Graviton). The official
+    # twentycrm/twenty image is multi-arch, which is why it always just worked
+    # there — this one is built for one architecture, so it has to be the right
+    # one. Building arm64 under QEMU on an amd64 runner does work, but the
+    # frontend build alone wants an 8 GB heap and emulation turns that into
+    # hours; native is the only sane option.
+    runs-on: ubuntu-24.04-arm
 
     permissions:
       contents: read
@@ -50,9 +56,9 @@ jobs:
           # Server and frontend in one image, the same shape the official
           # twentycrm/twenty image has. Server and worker both run it.
           target: twenty
-          # Match the machine that will run it: linux/arm64 for Graviton.
-          # Check with `uname -m` on the box — x86_64 means amd64.
-          platforms: linux/amd64
+          # The box reports aarch64. Only this one is built — nothing else runs
+          # this image, so a second architecture would be time spent for nobody.
+          platforms: linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           build-args: |
