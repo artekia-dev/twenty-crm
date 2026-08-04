@@ -1,6 +1,7 @@
 import { styled } from '@linaria/react';
 import { t } from '@lingui/core/macro';
 import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
@@ -21,7 +22,6 @@ const StyledMessage = styled.div`
 
 type DocumentoViewerProps = {
   objeto: 'factura' | 'albaran';
-  recordId: string;
 };
 
 // Shows the scanned document of an invoice or delivery note.
@@ -37,15 +37,18 @@ type DocumentoViewerProps = {
 // No PDF library either. A blob of application/pdf goes to the browser's own
 // viewer, which already does paging, zoom and full screen better than anything
 // worth bundling.
-export const DocumentoViewer = ({ objeto, recordId }: DocumentoViewerProps) => {
+export const DocumentoViewer = ({ objeto }: DocumentoViewerProps) => {
   const tokenPair = useAtomStateValue(tokenPairState);
+  // The record page route carries the id; widget configuration cannot, since
+  // one widget serves every record of the object.
+  const { objectRecordId: recordId } = useParams();
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const token = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
 
-    if (!token) return;
+    if (!token || !recordId) return;
 
     let url: string | null = null;
     let cancelled = false;

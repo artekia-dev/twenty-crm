@@ -1,3 +1,5 @@
+import { DocumentoViewer } from '@/documento/components/DocumentoViewer';
+import { matchDocumentoWidget } from '@/documento/utils/matchDocumentoWidget';
 import { type PageLayoutWidget } from '@/page-layout/types/PageLayoutWidget';
 import { CalendarWidget } from '@/page-layout/widgets/calendar/components/CalendarWidget';
 import { EmailThreadWidget } from '@/page-layout/widgets/email-thread/components/EmailThreadWidget';
@@ -19,6 +21,8 @@ import { WorkflowRunWidget } from '@/page-layout/widgets/workflow/components/Wor
 import { WorkflowVersionWidget } from '@/page-layout/widgets/workflow/components/WorkflowVersionWidget';
 import { RecordTableWidgetRenderer } from '@/page-layout/widgets/record-table/components/RecordTableWidgetRenderer';
 import { WorkflowWidget } from '@/page-layout/widgets/workflow/components/WorkflowWidget';
+import { isDefined } from 'twenty-shared/utils';
+
 import { WidgetType } from '~/generated-metadata/graphql';
 
 type WidgetContentRendererProps = {
@@ -32,8 +36,22 @@ export const WidgetContentRenderer = ({
     case WidgetType.GRAPH:
       return <GraphWidgetRenderer widget={widget} />;
 
-    case WidgetType.IFRAME:
+    case WidgetType.IFRAME: {
+      // Our own document endpoint cannot be shown by a plain iframe: Twenty
+      // keeps the session in an Authorization header and a frame navigation
+      // sends no headers, so it would answer 403. DocumentoViewer fetches it
+      // with the token and hands the browser a blob instead.
+      //
+      // Recognised by the path rather than by a widget type of its own, so a
+      // document tab is configured exactly like any other embedded page.
+      const documento = matchDocumentoWidget(widget);
+
+      if (isDefined(documento)) {
+        return <DocumentoViewer objeto={documento.objeto} />;
+      }
+
       return <IframeWidget widget={widget} />;
+    }
 
     case WidgetType.FIELD:
       return <FieldWidget widget={widget} />;
