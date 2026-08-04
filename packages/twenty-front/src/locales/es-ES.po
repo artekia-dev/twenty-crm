@@ -21096,3 +21096,23 @@ msgstr "Tu espacio de trabajo se desactivará"
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
 msgid "Zed"
 msgstr "Zed"
+
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "Change to No?"
+msgstr "¿Cambiar a No?"
+
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "Change to Yes?"
+msgstr "¿Cambiar a Sí?"
+
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "This is currently Yes and will be saved as No."
+msgstr "Ahora está en Sí y se guardará como No."
+
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "This is currently No and will be saved as Yes."
+msgstr "Ahora está en No y se guardará como Sí."
+
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "Change"
+msgstr "Cambiar"
