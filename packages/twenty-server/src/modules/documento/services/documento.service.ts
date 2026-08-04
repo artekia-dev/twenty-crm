@@ -41,13 +41,25 @@ export class DocumentoService {
     objeto: Objeto;
     recordId: string;
   }): Promise<{ stream: Readable; nombre: string } | null> {
-    // No bypass. The caller's own permissions decide whether this returns a
-    // row, which is exactly the check we want.
-    const repository = await this.globalWorkspaceOrmManager.getRepository(workspaceId, objeto);
+    // Opened in the CALLER's workspace context, not a system one. That is the
+    // whole design: their company scope applies to this read, so an invoice
+    // they cannot see returns nothing and therefore yields no file.
+    //
+    // Passing no auth context is what picks up the current request's. Handing
+    // it a system context here would quietly disable the permission check this
+    // endpoint relies on.
+    const registro = await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const repository = await this.globalWorkspaceOrmManager.getRepository(
+          workspaceId,
+          objeto,
+        );
 
-    const registro = (await repository.findOne({ where: { id: recordId } })) as
-      | (Record<string, unknown> & { fileName?: string })
-      | null;
+        return (await repository.findOne({ where: { id: recordId } })) as
+          | (Record<string, unknown> & { fileName?: string })
+          | null;
+      },
+    );
 
     const itemId = registro?.[CAMPO_DOCUMENTO];
 
