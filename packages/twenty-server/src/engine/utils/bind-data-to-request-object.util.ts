@@ -17,6 +17,11 @@ export const bindDataToRequestObject = (
   request.workspaceMetadataVersion = metadataVersion;
   request.workspaceMemberId = data.workspaceMemberId;
   request.workspaceMember = data.workspaceMember;
+  // Copied field by field, so anything not listed here silently never reaches
+  // the request. The company scope was resolved during authentication and then
+  // dropped right here, which the query builder read as "unknown caller" and
+  // answered with no records at all.
+  request.companyScope = data.companyScope;
   request.userWorkspaceId = data.userWorkspaceId;
   request.authProvider = data.authProvider;
   request.impersonationContext = data.impersonationContext;
