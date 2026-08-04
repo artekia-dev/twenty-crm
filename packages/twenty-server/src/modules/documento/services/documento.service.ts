@@ -6,6 +6,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Readable } from 'stream';
 
 import { type UserWorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
+import { UserRoleService } from 'src/engine/metadata-modules/user-role/user-role.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 
 // Serves the scanned document behind an invoice or delivery note.
@@ -31,7 +32,10 @@ const CAMPO_DOCUMENTO = 'sharepointItemId';
 export class DocumentoService {
   private readonly logger = new Logger(DocumentoService.name);
 
-  constructor(private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager) {}
+  constructor(
+    private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
+    private readonly userRoleService: UserRoleService,
+  ) {}
 
   async obtener({
     authContext,
@@ -51,11 +55,22 @@ export class DocumentoService {
     // middleware that populates that storage is registered for the GraphQL and
     // REST routes, not for this one. Handing it a system context instead would
     // quietly disable the only permission check this endpoint has.
+    // The repository has to be told which role is asking. Without it the ORM
+    // assumes no permissions at all and refuses the read, which is the safe
+    // default but not the answer here.
+    const roleId = await this.userRoleService.getRoleIdForUserWorkspace({
+      userWorkspaceId: authContext.userWorkspaceId,
+      workspaceId,
+    });
+
+    if (!roleId) return null;
+
     const registro = await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
       async () => {
         const repository = await this.globalWorkspaceOrmManager.getRepository(
           workspaceId,
           objeto,
+          { intersectionOf: [roleId] },
         );
 
         return (await repository.findOne({ where: { id: recordId } })) as

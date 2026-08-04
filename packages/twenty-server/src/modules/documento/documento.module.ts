@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
+import { UserRoleModule } from 'src/engine/metadata-modules/user-role/user-role.module';
 import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/workspace-cache-storage.module';
 import { DocumentoController } from 'src/modules/documento/controllers/documento.controller';
 import { DocumentoService } from 'src/modules/documento/services/documento.service';
@@ -9,7 +10,7 @@ import { DocumentoService } from 'src/modules/documento/services/documento.servi
 // service and the workspace cache, and Nest only resolves what the module
 // importing them can see.
 @Module({
-  imports: [AuthModule, WorkspaceCacheStorageModule],
+  imports: [AuthModule, WorkspaceCacheStorageModule, UserRoleModule],
   controllers: [DocumentoController],
   providers: [DocumentoService],
 })
