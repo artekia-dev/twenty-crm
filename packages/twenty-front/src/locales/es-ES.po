@@ -12014,7 +12014,7 @@ msgstr "Nuevo"
 #. js-lingui-id: LfvvW4
 #: src/modules/side-panel/hooks/useOpenRecordInSidePanel.ts
 msgid "New {objectLabelSingular}"
-msgstr "Nuevo {objectLabelSingular}"
+msgstr "Agregar {objectLabelSingular}"
 
 #. js-lingui-id: Kcr9Fr
 #: src/modules/settings/accounts/components/SettingsNewAccountSection.tsx
