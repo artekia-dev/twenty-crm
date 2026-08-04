@@ -101,7 +101,24 @@ export const applyCompanyScope = ({
 
   const mainAlias = queryBuilder.expressionMap.mainAlias;
 
-  if (!mainAlias?.metadata || !mainAlias.name) return;
+  // `hasMetadata` BEFORE `metadata`, and the order is not cosmetic: reading
+  // `.metadata` on an alias that has none THROWS instead of returning nothing.
+  // Twenty builds a subquery aliased `limited_relation_records` to load
+  // one-to-many relations, and it carries no entity metadata, so touching
+  // `.metadata` first broke every list in the application.
+  //
+  // Letting that subquery through is safe, and it is worth knowing why rather
+  // than assuming it. It only collects candidate ids: the records themselves
+  // are then fetched with `getMany()`, which does go through here and is
+  // scoped. Nothing from another company survives to the response.
+  //
+  // What it can do is return FEWER records than it should. That inner query
+  // takes the first N ids per parent without scoping, so another company's
+  // records can crowd out the ones this user is entitled to see, and the
+  // scoped fetch afterwards can only remove, never recover them. Missing rows,
+  // never foreign ones. Fixing it properly means scoping `getQuery()` too,
+  // which is not overridden today.
+  if (!mainAlias?.name || !mainAlias.hasMetadata) return;
 
   // Ask the entity itself whether it is scoped, rather than keeping a list of
   // object names somewhere else. A list would need updating every time a new
