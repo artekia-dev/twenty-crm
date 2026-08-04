@@ -48,7 +48,20 @@ export const DocumentoViewer = ({ objeto }: DocumentoViewerProps) => {
   useEffect(() => {
     const token = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
 
-    if (!token || !recordId) return;
+    // Say so rather than sitting on "Loading" for ever. A viewer that hangs in
+    // silence is indistinguishable from a slow one, and there is nothing to go
+    // on when it happens.
+    if (!token) {
+      setError(t`Your session could not be read. Reload the page.`);
+
+      return;
+    }
+
+    if (!recordId) {
+      setError(t`This viewer only works inside a record page.`);
+
+      return;
+    }
 
     let url: string | null = null;
     let cancelled = false;
@@ -69,7 +82,7 @@ export const DocumentoViewer = ({ objeto }: DocumentoViewerProps) => {
         }
 
         if (!response.ok) {
-          setError(t`The document could not be loaded.`);
+          setError(t`The document could not be loaded (${response.status}).`);
 
           return;
         }
@@ -83,8 +96,10 @@ export const DocumentoViewer = ({ objeto }: DocumentoViewerProps) => {
         }
 
         setObjectUrl(url);
-      } catch {
-        setError(t`The document could not be loaded.`);
+      } catch (e) {
+        setError(
+          t`The document could not be loaded: ${e instanceof Error ? e.message : 'unknown error'}`,
+        );
       }
     };
 
