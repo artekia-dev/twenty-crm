@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Logger,
   NotFoundException,
   Param,
   Req,
@@ -28,6 +29,8 @@ import { DocumentoService } from 'src/modules/documento/services/documento.servi
 @Controller('documento')
 @UseGuards(JwtAuthGuard, WorkspaceAuthGuard)
 export class DocumentoController {
+  private readonly logger = new Logger(DocumentoController.name);
+
   constructor(private readonly documentoService: DocumentoService) {}
 
   @Get(':objeto/:recordId')
@@ -45,11 +48,19 @@ export class DocumentoController {
 
     if (!workspaceId) throw new NotFoundException();
 
-    const documento = await this.documentoService.obtener({
-      workspaceId,
-      objeto,
-      recordId,
-    });
+    // Logged here on purpose. Whatever wraps this route swallows the trace and
+    // answers a bare 500, which says nothing about what actually broke.
+    const documento = await this.documentoService
+      .obtener({ workspaceId, objeto, recordId })
+      .catch((error: unknown) => {
+        this.logger.error(
+          `Fetching ${objeto} ${recordId} failed: ${
+            error instanceof Error ? `${error.message}\n${error.stack}` : String(error)
+          }`,
+        );
+
+        throw error;
+      });
 
     // One answer for "does not exist", "has no file" and "not yours". Telling
     // them apart would let someone map which invoices exist in a company they
