@@ -78,6 +78,7 @@ import { MessagingFolderSyncManagerModule } from 'src/modules/messaging/message-
 import { AuthResolver } from './auth.resolver';
 
 import { AuthService } from './services/auth.service';
+import { RoleTargetEntity } from 'src/engine/metadata-modules/role-target/role-target.entity';
 import { CompanyScopeResolverService } from 'src/engine/core-modules/auth/services/company-scope-resolver.service';
 
 import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
@@ -96,6 +97,7 @@ import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
       ApiKeyEntity,
       FeatureFlagEntity,
       WorkspaceSSOIdentityProviderEntity,
+      RoleTargetEntity,
       KeyValuePairEntity,
       UserWorkspaceEntity,
       TwoFactorAuthenticationMethodEntity,

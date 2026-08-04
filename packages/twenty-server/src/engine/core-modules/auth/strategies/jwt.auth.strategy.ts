@@ -209,6 +209,7 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy, 'jwt') {
     const companyScope = await this.companyScopeResolverService.resolve({
       workspace,
       workspaceMemberId: workspaceMember.id,
+      userWorkspaceId: context.userWorkspaceId,
     });
 
     return {
