@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { type Readable } from 'stream';
+// Not a type-only import: Readable.fromWeb is called at runtime, and a type
+// import vanishes at compile time. Nothing in the type checker catches this,
+// only the 500 does.
+import { Readable } from 'stream';
 
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 
