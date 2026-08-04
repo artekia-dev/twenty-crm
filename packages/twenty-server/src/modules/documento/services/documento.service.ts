@@ -5,6 +5,7 @@ import { Injectable, Logger } from '@nestjs/common';
 // only the 500 does.
 import { Readable } from 'stream';
 
+import { type UserWorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 
 // Serves the scanned document behind an invoice or delivery note.
@@ -33,21 +34,23 @@ export class DocumentoService {
   constructor(private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager) {}
 
   async obtener({
-    workspaceId,
+    authContext,
     objeto,
     recordId,
   }: {
-    workspaceId: string;
+    authContext: UserWorkspaceAuthContext;
     objeto: Objeto;
     recordId: string;
   }): Promise<{ stream: Readable; nombre: string } | null> {
+    const workspaceId = authContext.workspace.id;
     // Opened in the CALLER's workspace context, not a system one. That is the
     // whole design: their company scope applies to this read, so an invoice
     // they cannot see returns nothing and therefore yields no file.
     //
-    // Passing no auth context is what picks up the current request's. Handing
-    // it a system context here would quietly disable the permission check this
-    // endpoint relies on.
+    // The context is passed in rather than read from ambient storage: the
+    // middleware that populates that storage is registered for the GraphQL and
+    // REST routes, not for this one. Handing it a system context instead would
+    // quietly disable the only permission check this endpoint has.
     const registro = await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
       async () => {
         const repository = await this.globalWorkspaceOrmManager.getRepository(
@@ -59,6 +62,7 @@ export class DocumentoService {
           | (Record<string, unknown> & { fileName?: string })
           | null;
       },
+      authContext,
     );
 
     const itemId = registro?.[CAMPO_DOCUMENTO];

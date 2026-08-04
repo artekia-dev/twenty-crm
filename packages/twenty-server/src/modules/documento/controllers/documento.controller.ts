@@ -13,6 +13,7 @@ import { pipeline } from 'node:stream/promises';
 
 import { type Request, type Response } from 'express';
 
+import { buildUserAuthContext } from 'src/engine/core-modules/auth/utils/build-user-auth-context.util';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
 import { DocumentoService } from 'src/modules/documento/services/documento.service';
@@ -44,14 +45,31 @@ export class DocumentoController {
       throw new NotFoundException('Only invoices and delivery notes have documents.');
     }
 
-    const workspaceId = request.workspace?.id;
+    // Everything here was put on the request by the guards above, so reaching
+    // this line already means an authenticated member of the workspace.
+    if (
+      !request.workspace ||
+      !request.user ||
+      !request.workspaceMember ||
+      !request.workspaceMemberId ||
+      !request.userWorkspaceId
+    ) {
+      throw new NotFoundException();
+    }
 
-    if (!workspaceId) throw new NotFoundException();
+    const authContext = buildUserAuthContext({
+      workspace: request.workspace,
+      userWorkspaceId: request.userWorkspaceId,
+      user: request.user,
+      workspaceMemberId: request.workspaceMemberId,
+      workspaceMember: request.workspaceMember,
+      companyScope: request.companyScope,
+    });
 
     // Logged here on purpose. Whatever wraps this route swallows the trace and
     // answers a bare 500, which says nothing about what actually broke.
     const documento = await this.documentoService
-      .obtener({ workspaceId, objeto, recordId })
+      .obtener({ authContext, objeto, recordId })
       .catch((error: unknown) => {
         this.logger.error(
           `Fetching ${objeto} ${recordId} failed: ${
