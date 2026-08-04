@@ -44,6 +44,18 @@ type ScopableQueryBuilder = {
 // scoped if — and only if — it has this column.
 const COMPANY_SCOPE_COLUMN = 'sociedadId';
 
+// The access table is the one exception, and it has to be.
+//
+// It carries a `sociedadId` like any scoped object, because it points at a
+// company. Scope it and it filters itself by the very rows it defines: someone
+// could only see access rows for companies they already have access to, so
+// granting the first one is impossible, and a freshly written row comes back
+// empty because the read that follows the write hides it.
+//
+// It is configuration, not documents. Who may manage it belongs to object
+// permissions and roles, which is where that question is answered.
+const ACCESS_OBJECT_NAME = 'accesoSociedad';
+
 const resolveScope = (authContext: WorkspaceAuthContext): CompanyScope => {
   // Only real people get scoped.
   //
@@ -95,6 +107,8 @@ export const applyCompanyScope = ({
   // object names somewhere else. A list would need updating every time a new
   // scoped object appears, and the day someone forgets, that object is wide
   // open and looks fine.
+  if (mainAlias.metadata.name === ACCESS_OBJECT_NAME) return;
+
   const isScoped = Boolean(mainAlias.metadata.findColumnWithPropertyPath(COMPANY_SCOPE_COLUMN));
 
   if (!isScoped) return;
