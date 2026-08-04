@@ -78,8 +78,6 @@ import { MessagingFolderSyncManagerModule } from 'src/modules/messaging/message-
 import { AuthResolver } from './auth.resolver';
 
 import { AuthService } from './services/auth.service';
-import { CompanyScopeResolverService } from 'src/engine/core-modules/auth/services/company-scope-resolver.service';
-
 import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
 
 @Module({
@@ -148,7 +146,6 @@ import { JwtAuthStrategy } from './strategies/jwt.auth.strategy';
     SignInUpService,
     AuthService,
     JwtAuthStrategy,
-    CompanyScopeResolverService,
     SamlAuthStrategy,
     AuthResolver,
     GoogleAPIsService,
