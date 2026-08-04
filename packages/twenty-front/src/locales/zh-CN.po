@@ -3559,6 +3559,11 @@ msgstr "抄送"
 msgid "Cc/Bcc"
 msgstr "抄送/密送"
 
+#. js-lingui-id: o+XJ9D
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "Change"
+msgstr ""
+
 #. js-lingui-id: tHntRt
 #: src/modules/blocknote-editor/components/CustomSideMenu.tsx
 #: src/modules/page-layout/widgets/standalone-rich-text/components/DashboardEditorSideMenu.tsx
@@ -3596,6 +3601,11 @@ msgstr "更改子域名？"
 msgid "Change to Monthly?"
 msgstr "切换为按月？"
 
+#. js-lingui-id: pqFJZh
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "Change to No?"
+msgstr ""
+
 #. js-lingui-id: C8G9Mq
 #: src/modules/settings/billing/components/internal/SettingsBillingPlansWithSubscription.tsx
 msgid "Change to Organization Plan?"
@@ -3610,6 +3620,11 @@ msgstr "切换为专业计划？"
 #: src/modules/settings/billing/components/internal/SettingsBillingSubscriptionInfoModals.tsx
 msgid "Change to Yearly?"
 msgstr "更改为年度计划吗？"
+
+#. js-lingui-id: 3527eQ
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "Change to Yes?"
+msgstr ""
 
 #. js-lingui-id: LhVon3
 #: src/pages/settings/applications/SettingsApplicationConnectionDetail.tsx
@@ -6448,6 +6463,7 @@ msgid "Docs"
 msgstr "文档"
 
 #. js-lingui-id: 7Zdnlq
+#: src/modules/documento/components/DocumentoViewer.tsx
 #: src/modules/settings/legal/components/SettingsDpaAgreementsTable.tsx
 msgid "Document"
 msgstr "文档"
@@ -10977,6 +10993,11 @@ msgstr "加载 csv ... "
 #: src/modules/ui/field/display/components/GlobalFilePreviewModal.tsx
 msgid "Loading document viewer..."
 msgstr "正在加载文档查看器…"
+
+#. js-lingui-id: PZctm0
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "Loading document…"
+msgstr ""
 
 #. js-lingui-id: qIaOZk
 #: src/modules/activities/emails/components/EmailLoader.tsx
@@ -17847,6 +17868,18 @@ msgstr "新地址的默认国家"
 msgid "The description of this field"
 msgstr "此字段的描述"
 
+#. js-lingui-id: K/kaxF
+#. placeholder {0}: response.status
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "The document could not be loaded ({0})."
+msgstr ""
+
+#. js-lingui-id: Na2uYG
+#. placeholder {0}: e instanceof Error ? e.message : 'unknown error'
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "The document could not be loaded: {0}"
+msgstr ""
+
 #. js-lingui-id: xJSPh6
 #: src/modules/settings/members/components/MemberInfosTab.tsx
 msgid "The email associated to this account"
@@ -18193,6 +18226,16 @@ msgstr "这是一个非生产实例。"
 msgid "This is a relation to a Junction Object"
 msgstr "这是指向连接对象的关系"
 
+#. js-lingui-id: 4Tslso
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "This is currently No and will be saved as Yes."
+msgstr ""
+
+#. js-lingui-id: n1He+q
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "This is currently Yes and will be saved as No."
+msgstr ""
+
 #. js-lingui-id: E4JJ5C
 #: src/modules/object-record/record-index/components/RecordIndexRemoveSortingModal.tsx
 msgid "This is required to enable manual row reordering."
@@ -18227,6 +18270,11 @@ msgstr "此提供商尚无原生 SDK — 将使用与 OpenAI 兼容的模式。�
 #: src/modules/information-banner/components/deleted-record/InformationBannerDeletedRecord.tsx
 msgid "This record has been deleted"
 msgstr "此记录已被删除"
+
+#. js-lingui-id: Ycq5oa
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "This record has no document attached."
+msgstr ""
 
 #. js-lingui-id: vbLBMd
 #: src/modules/settings/roles/role-permissions/object-level-permissions/object-form/components/SettingsRolePermissionsObjectLevelObjectFormObjectLevelTableRow.tsx
@@ -18285,6 +18333,11 @@ msgstr "此视图在 \"{1}\" 的字段 \"{0}\" 上使用了 {usageLabel}，但�
 #: src/modules/object-record/record-index/utils/getNonReadableViewFieldSubTitle.ts
 msgid "This view uses {usageLabel} on object \"{0}\" which is not accessible."
 msgstr "此视图在对象 \"{0}\" 上使用了 {usageLabel}，但不可访问。"
+
+#. js-lingui-id: VJDGiR
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "This viewer only works inside a record page."
+msgstr ""
 
 #. js-lingui-id: yByRxz
 #: src/modules/settings/admin-panel/health-status/constants/WorkerQueueMetricsSelectOptions.ts
@@ -20991,6 +21044,11 @@ msgstr "您的方案将立即切换为 Pro，试用将继续。试用结束后�
 #: src/pages/settings/admin-panel/SettingsAdminNewAiProvider.tsx
 msgid "Your provider API key for authentication"
 msgstr "用于身份验证的提供商 API 密钥"
+
+#. js-lingui-id: RvQOdC
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "Your session could not be read. Reload the page."
+msgstr ""
 
 #. js-lingui-id: 319YPG
 #: src/pages/settings/enterprise/SettingsEnterprise.tsx

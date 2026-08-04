@@ -3559,6 +3559,11 @@ msgstr "Κοινοποίηση"
 msgid "Cc/Bcc"
 msgstr "Cc/Bcc"
 
+#. js-lingui-id: o+XJ9D
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "Change"
+msgstr ""
+
 #. js-lingui-id: tHntRt
 #: src/modules/blocknote-editor/components/CustomSideMenu.tsx
 #: src/modules/page-layout/widgets/standalone-rich-text/components/DashboardEditorSideMenu.tsx
@@ -3596,6 +3601,11 @@ msgstr "Αλλαγή υποτομέα;"
 msgid "Change to Monthly?"
 msgstr "Αλλαγή σε Μηνιαίο;"
 
+#. js-lingui-id: pqFJZh
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "Change to No?"
+msgstr ""
+
 #. js-lingui-id: C8G9Mq
 #: src/modules/settings/billing/components/internal/SettingsBillingPlansWithSubscription.tsx
 msgid "Change to Organization Plan?"
@@ -3610,6 +3620,11 @@ msgstr "Αλλαγή σε Επαγγελματικό Πρόγραμμα;"
 #: src/modules/settings/billing/components/internal/SettingsBillingSubscriptionInfoModals.tsx
 msgid "Change to Yearly?"
 msgstr "Αλλαγή σε ετήσια;"
+
+#. js-lingui-id: 3527eQ
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "Change to Yes?"
+msgstr ""
 
 #. js-lingui-id: LhVon3
 #: src/pages/settings/applications/SettingsApplicationConnectionDetail.tsx
@@ -6448,6 +6463,7 @@ msgid "Docs"
 msgstr "Τεκμηρίωση"
 
 #. js-lingui-id: 7Zdnlq
+#: src/modules/documento/components/DocumentoViewer.tsx
 #: src/modules/settings/legal/components/SettingsDpaAgreementsTable.tsx
 msgid "Document"
 msgstr "Έγγραφο"
@@ -11000,6 +11016,11 @@ msgstr "Φόρτωση csv ... "
 #: src/modules/ui/field/display/components/GlobalFilePreviewModal.tsx
 msgid "Loading document viewer..."
 msgstr "Φόρτωση προβολέα εγγράφων..."
+
+#. js-lingui-id: PZctm0
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "Loading document…"
+msgstr ""
 
 #. js-lingui-id: qIaOZk
 #: src/modules/activities/emails/components/EmailLoader.tsx
@@ -17902,6 +17923,18 @@ msgstr "Η προεπιλεγμένη χώρα για νέες διευθύνσ�
 msgid "The description of this field"
 msgstr "Η περιγραφή αυτού του πεδίου"
 
+#. js-lingui-id: K/kaxF
+#. placeholder {0}: response.status
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "The document could not be loaded ({0})."
+msgstr ""
+
+#. js-lingui-id: Na2uYG
+#. placeholder {0}: e instanceof Error ? e.message : 'unknown error'
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "The document could not be loaded: {0}"
+msgstr ""
+
 #. js-lingui-id: xJSPh6
 #: src/modules/settings/members/components/MemberInfosTab.tsx
 msgid "The email associated to this account"
@@ -18250,6 +18283,16 @@ msgstr "Αυτό είναι instance μη παραγωγής."
 msgid "This is a relation to a Junction Object"
 msgstr "Αυτή είναι μια σχέση προς ένα αντικείμενο σύνδεσης"
 
+#. js-lingui-id: 4Tslso
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "This is currently No and will be saved as Yes."
+msgstr ""
+
+#. js-lingui-id: n1He+q
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "This is currently Yes and will be saved as No."
+msgstr ""
+
 #. js-lingui-id: E4JJ5C
 #: src/modules/object-record/record-index/components/RecordIndexRemoveSortingModal.tsx
 msgid "This is required to enable manual row reordering."
@@ -18284,6 +18327,11 @@ msgstr "Αυτός ο πάροχος δεν διαθέτει ακόμη εγγε
 #: src/modules/information-banner/components/deleted-record/InformationBannerDeletedRecord.tsx
 msgid "This record has been deleted"
 msgstr "Αυτή η εγγραφή έχει διαγραφεί"
+
+#. js-lingui-id: Ycq5oa
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "This record has no document attached."
+msgstr ""
 
 #. js-lingui-id: vbLBMd
 #: src/modules/settings/roles/role-permissions/object-level-permissions/object-form/components/SettingsRolePermissionsObjectLevelObjectFormObjectLevelTableRow.tsx
@@ -18342,6 +18390,11 @@ msgstr "Αυτή η προβολή χρησιμοποιεί {usageLabel} στο 
 #: src/modules/object-record/record-index/utils/getNonReadableViewFieldSubTitle.ts
 msgid "This view uses {usageLabel} on object \"{0}\" which is not accessible."
 msgstr "Αυτή η προβολή χρησιμοποιεί {usageLabel} στο αντικείμενο \"{0}\", το οποίο δεν είναι προσβάσιμο."
+
+#. js-lingui-id: VJDGiR
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "This viewer only works inside a record page."
+msgstr ""
 
 #. js-lingui-id: yByRxz
 #: src/modules/settings/admin-panel/health-status/constants/WorkerQueueMetricsSelectOptions.ts
@@ -21050,6 +21103,11 @@ msgstr "Το πλάνο σας θα αλλάξει άμεσα σε Pro και η
 #: src/pages/settings/admin-panel/SettingsAdminNewAiProvider.tsx
 msgid "Your provider API key for authentication"
 msgstr "Το κλειδί API του παρόχου σας για πιστοποίηση"
+
+#. js-lingui-id: RvQOdC
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "Your session could not be read. Reload the page."
+msgstr ""
 
 #. js-lingui-id: 319YPG
 #: src/pages/settings/enterprise/SettingsEnterprise.tsx

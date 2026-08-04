@@ -3559,6 +3559,11 @@ msgstr "CC"
 msgid "Cc/Bcc"
 msgstr "참조/숨은 참조"
 
+#. js-lingui-id: o+XJ9D
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "Change"
+msgstr ""
+
 #. js-lingui-id: tHntRt
 #: src/modules/blocknote-editor/components/CustomSideMenu.tsx
 #: src/modules/page-layout/widgets/standalone-rich-text/components/DashboardEditorSideMenu.tsx
@@ -3596,6 +3601,11 @@ msgstr "서브도메인을 변경하시겠습니까?"
 msgid "Change to Monthly?"
 msgstr "월간으로 변경하시겠습니까?"
 
+#. js-lingui-id: pqFJZh
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "Change to No?"
+msgstr ""
+
 #. js-lingui-id: C8G9Mq
 #: src/modules/settings/billing/components/internal/SettingsBillingPlansWithSubscription.tsx
 msgid "Change to Organization Plan?"
@@ -3610,6 +3620,11 @@ msgstr "Pro 플랜으로 변경하시겠습니까?"
 #: src/modules/settings/billing/components/internal/SettingsBillingSubscriptionInfoModals.tsx
 msgid "Change to Yearly?"
 msgstr "연간 요금제로 변경?"
+
+#. js-lingui-id: 3527eQ
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "Change to Yes?"
+msgstr ""
 
 #. js-lingui-id: LhVon3
 #: src/pages/settings/applications/SettingsApplicationConnectionDetail.tsx
@@ -6448,6 +6463,7 @@ msgid "Docs"
 msgstr "문서"
 
 #. js-lingui-id: 7Zdnlq
+#: src/modules/documento/components/DocumentoViewer.tsx
 #: src/modules/settings/legal/components/SettingsDpaAgreementsTable.tsx
 msgid "Document"
 msgstr "문서"
@@ -11000,6 +11016,11 @@ msgstr "csv 로딩 중 ... "
 #: src/modules/ui/field/display/components/GlobalFilePreviewModal.tsx
 msgid "Loading document viewer..."
 msgstr "문서 뷰어 로딩 중..."
+
+#. js-lingui-id: PZctm0
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "Loading document…"
+msgstr ""
 
 #. js-lingui-id: qIaOZk
 #: src/modules/activities/emails/components/EmailLoader.tsx
@@ -17900,6 +17921,18 @@ msgstr "새 주소의 기본 국가"
 msgid "The description of this field"
 msgstr "이 필드의 설명"
 
+#. js-lingui-id: K/kaxF
+#. placeholder {0}: response.status
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "The document could not be loaded ({0})."
+msgstr ""
+
+#. js-lingui-id: Na2uYG
+#. placeholder {0}: e instanceof Error ? e.message : 'unknown error'
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "The document could not be loaded: {0}"
+msgstr ""
+
 #. js-lingui-id: xJSPh6
 #: src/modules/settings/members/components/MemberInfosTab.tsx
 msgid "The email associated to this account"
@@ -18246,6 +18279,16 @@ msgstr "이 인스턴스는 비프로덕션 인스턴스입니다."
 msgid "This is a relation to a Junction Object"
 msgstr "이는 정션 오브젝트에 대한 관계입니다"
 
+#. js-lingui-id: 4Tslso
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "This is currently No and will be saved as Yes."
+msgstr ""
+
+#. js-lingui-id: n1He+q
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "This is currently Yes and will be saved as No."
+msgstr ""
+
 #. js-lingui-id: E4JJ5C
 #: src/modules/object-record/record-index/components/RecordIndexRemoveSortingModal.tsx
 msgid "This is required to enable manual row reordering."
@@ -18280,6 +18323,11 @@ msgstr "이 공급자는 아직 네이티브 SDK가 없습니다 — OpenAI 호�
 #: src/modules/information-banner/components/deleted-record/InformationBannerDeletedRecord.tsx
 msgid "This record has been deleted"
 msgstr "이 레코드는 삭제되었습니다"
+
+#. js-lingui-id: Ycq5oa
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "This record has no document attached."
+msgstr ""
 
 #. js-lingui-id: vbLBMd
 #: src/modules/settings/roles/role-permissions/object-level-permissions/object-form/components/SettingsRolePermissionsObjectLevelObjectFormObjectLevelTableRow.tsx
@@ -18338,6 +18386,11 @@ msgstr "이 뷰는 \"{1}\"의 필드 \"{0}\"에 {usageLabel}을(를) 사용하�
 #: src/modules/object-record/record-index/utils/getNonReadableViewFieldSubTitle.ts
 msgid "This view uses {usageLabel} on object \"{0}\" which is not accessible."
 msgstr "이 뷰는 객체 \"{0}\"에 {usageLabel}을(를) 사용하지만, 해당 객체에 접근할 수 없습니다."
+
+#. js-lingui-id: VJDGiR
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "This viewer only works inside a record page."
+msgstr ""
 
 #. js-lingui-id: yByRxz
 #: src/modules/settings/admin-panel/health-status/constants/WorkerQueueMetricsSelectOptions.ts
@@ -21044,6 +21097,11 @@ msgstr "플랜이 즉시 Pro로 전환되며 체험판은 계속됩니다. 체�
 #: src/pages/settings/admin-panel/SettingsAdminNewAiProvider.tsx
 msgid "Your provider API key for authentication"
 msgstr "인증을 위한 공급자 API 키"
+
+#. js-lingui-id: RvQOdC
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "Your session could not be read. Reload the page."
+msgstr ""
 
 #. js-lingui-id: 319YPG
 #: src/pages/settings/enterprise/SettingsEnterprise.tsx

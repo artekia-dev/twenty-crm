@@ -3559,6 +3559,11 @@ msgstr "CC"
 msgid "Cc/Bcc"
 msgstr "Cc/Cco"
 
+#. js-lingui-id: o+XJ9D
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "Change"
+msgstr "Cambiar"
+
 #. js-lingui-id: tHntRt
 #: src/modules/blocknote-editor/components/CustomSideMenu.tsx
 #: src/modules/page-layout/widgets/standalone-rich-text/components/DashboardEditorSideMenu.tsx
@@ -3596,6 +3601,11 @@ msgstr "¿Cambiar subdominio?"
 msgid "Change to Monthly?"
 msgstr "¿Cambiar a mensual?"
 
+#. js-lingui-id: pqFJZh
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "Change to No?"
+msgstr "¿Cambiar a No?"
+
 #. js-lingui-id: C8G9Mq
 #: src/modules/settings/billing/components/internal/SettingsBillingPlansWithSubscription.tsx
 msgid "Change to Organization Plan?"
@@ -3610,6 +3620,11 @@ msgstr "¿Cambiar al Plan Pro?"
 #: src/modules/settings/billing/components/internal/SettingsBillingSubscriptionInfoModals.tsx
 msgid "Change to Yearly?"
 msgstr "Cambiar a anual?"
+
+#. js-lingui-id: 3527eQ
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "Change to Yes?"
+msgstr "¿Cambiar a Sí?"
 
 #. js-lingui-id: LhVon3
 #: src/pages/settings/applications/SettingsApplicationConnectionDetail.tsx
@@ -6448,6 +6463,7 @@ msgid "Docs"
 msgstr "Documentación"
 
 #. js-lingui-id: 7Zdnlq
+#: src/modules/documento/components/DocumentoViewer.tsx
 #: src/modules/settings/legal/components/SettingsDpaAgreementsTable.tsx
 msgid "Document"
 msgstr "Documento"
@@ -11000,6 +11016,11 @@ msgstr "Cargando csv ... "
 #: src/modules/ui/field/display/components/GlobalFilePreviewModal.tsx
 msgid "Loading document viewer..."
 msgstr "Cargando el visor de documentos..."
+
+#. js-lingui-id: PZctm0
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "Loading document…"
+msgstr ""
 
 #. js-lingui-id: qIaOZk
 #: src/modules/activities/emails/components/EmailLoader.tsx
@@ -17900,6 +17921,18 @@ msgstr "El país predeterminado para nuevas direcciones"
 msgid "The description of this field"
 msgstr "La descripción de este campo"
 
+#. js-lingui-id: K/kaxF
+#. placeholder {0}: response.status
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "The document could not be loaded ({0})."
+msgstr ""
+
+#. js-lingui-id: Na2uYG
+#. placeholder {0}: e instanceof Error ? e.message : 'unknown error'
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "The document could not be loaded: {0}"
+msgstr ""
+
 #. js-lingui-id: xJSPh6
 #: src/modules/settings/members/components/MemberInfosTab.tsx
 msgid "The email associated to this account"
@@ -18248,6 +18281,16 @@ msgstr "Esta es una instancia que no es de producción."
 msgid "This is a relation to a Junction Object"
 msgstr "Esta es una relación con un objeto de unión"
 
+#. js-lingui-id: 4Tslso
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "This is currently No and will be saved as Yes."
+msgstr "Ahora está en No y se guardará como Sí."
+
+#. js-lingui-id: n1He+q
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "This is currently Yes and will be saved as No."
+msgstr "Ahora está en Sí y se guardará como No."
+
 #. js-lingui-id: E4JJ5C
 #: src/modules/object-record/record-index/components/RecordIndexRemoveSortingModal.tsx
 msgid "This is required to enable manual row reordering."
@@ -18282,6 +18325,11 @@ msgstr "Este proveedor aún no tiene un SDK nativo — utilizará el modo compat
 #: src/modules/information-banner/components/deleted-record/InformationBannerDeletedRecord.tsx
 msgid "This record has been deleted"
 msgstr "Este registro ha sido eliminado"
+
+#. js-lingui-id: Ycq5oa
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "This record has no document attached."
+msgstr ""
 
 #. js-lingui-id: vbLBMd
 #: src/modules/settings/roles/role-permissions/object-level-permissions/object-form/components/SettingsRolePermissionsObjectLevelObjectFormObjectLevelTableRow.tsx
@@ -18340,6 +18388,11 @@ msgstr "Esta vista utiliza {usageLabel} en el campo \"{0}\" de \"{1}\", que no e
 #: src/modules/object-record/record-index/utils/getNonReadableViewFieldSubTitle.ts
 msgid "This view uses {usageLabel} on object \"{0}\" which is not accessible."
 msgstr "Esta vista utiliza {usageLabel} en el objeto \"{0}\", que no es accesible."
+
+#. js-lingui-id: VJDGiR
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "This viewer only works inside a record page."
+msgstr ""
 
 #. js-lingui-id: yByRxz
 #: src/modules/settings/admin-panel/health-status/constants/WorkerQueueMetricsSelectOptions.ts
@@ -21047,6 +21100,11 @@ msgstr "Tu plan cambiará a Pro inmediatamente y tu prueba continuará. Cuando t
 msgid "Your provider API key for authentication"
 msgstr "Tu clave de API del proveedor para la autenticación"
 
+#. js-lingui-id: RvQOdC
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "Your session could not be read. Reload the page."
+msgstr ""
+
 #. js-lingui-id: 319YPG
 #: src/pages/settings/enterprise/SettingsEnterprise.tsx
 msgid "Your subscription is active but your validity token is invalid or has expired. Try reloading it or contact support."
@@ -21096,23 +21154,3 @@ msgstr "Tu espacio de trabajo se desactivará"
 #: src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx
 msgid "Zed"
 msgstr "Zed"
-
-#: src/modules/ui/field/input/components/BooleanInput.tsx
-msgid "Change to No?"
-msgstr "¿Cambiar a No?"
-
-#: src/modules/ui/field/input/components/BooleanInput.tsx
-msgid "Change to Yes?"
-msgstr "¿Cambiar a Sí?"
-
-#: src/modules/ui/field/input/components/BooleanInput.tsx
-msgid "This is currently Yes and will be saved as No."
-msgstr "Ahora está en Sí y se guardará como No."
-
-#: src/modules/ui/field/input/components/BooleanInput.tsx
-msgid "This is currently No and will be saved as Yes."
-msgstr "Ahora está en No y se guardará como Sí."
-
-#: src/modules/ui/field/input/components/BooleanInput.tsx
-msgid "Change"
-msgstr "Cambiar"

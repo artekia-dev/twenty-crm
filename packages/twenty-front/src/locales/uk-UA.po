@@ -3559,6 +3559,11 @@ msgstr "Копія"
 msgid "Cc/Bcc"
 msgstr "Копія/Прихована копія"
 
+#. js-lingui-id: o+XJ9D
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "Change"
+msgstr ""
+
 #. js-lingui-id: tHntRt
 #: src/modules/blocknote-editor/components/CustomSideMenu.tsx
 #: src/modules/page-layout/widgets/standalone-rich-text/components/DashboardEditorSideMenu.tsx
@@ -3596,6 +3601,11 @@ msgstr "Установити новий піддомен?"
 msgid "Change to Monthly?"
 msgstr "Перейти на місячний план?"
 
+#. js-lingui-id: pqFJZh
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "Change to No?"
+msgstr ""
+
 #. js-lingui-id: C8G9Mq
 #: src/modules/settings/billing/components/internal/SettingsBillingPlansWithSubscription.tsx
 msgid "Change to Organization Plan?"
@@ -3610,6 +3620,11 @@ msgstr "Перейти на Pro план?"
 #: src/modules/settings/billing/components/internal/SettingsBillingSubscriptionInfoModals.tsx
 msgid "Change to Yearly?"
 msgstr "Змінити на річний?"
+
+#. js-lingui-id: 3527eQ
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "Change to Yes?"
+msgstr ""
 
 #. js-lingui-id: LhVon3
 #: src/pages/settings/applications/SettingsApplicationConnectionDetail.tsx
@@ -6448,6 +6463,7 @@ msgid "Docs"
 msgstr "Документація"
 
 #. js-lingui-id: 7Zdnlq
+#: src/modules/documento/components/DocumentoViewer.tsx
 #: src/modules/settings/legal/components/SettingsDpaAgreementsTable.tsx
 msgid "Document"
 msgstr "Документ"
@@ -11000,6 +11016,11 @@ msgstr "Завантаження csv ... "
 #: src/modules/ui/field/display/components/GlobalFilePreviewModal.tsx
 msgid "Loading document viewer..."
 msgstr "Завантаження переглядача документів..."
+
+#. js-lingui-id: PZctm0
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "Loading document…"
+msgstr ""
 
 #. js-lingui-id: qIaOZk
 #: src/modules/activities/emails/components/EmailLoader.tsx
@@ -17900,6 +17921,18 @@ msgstr "Країна за замовчуванням для нових адре�
 msgid "The description of this field"
 msgstr "Опис цього поля"
 
+#. js-lingui-id: K/kaxF
+#. placeholder {0}: response.status
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "The document could not be loaded ({0})."
+msgstr ""
+
+#. js-lingui-id: Na2uYG
+#. placeholder {0}: e instanceof Error ? e.message : 'unknown error'
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "The document could not be loaded: {0}"
+msgstr ""
+
 #. js-lingui-id: xJSPh6
 #: src/modules/settings/members/components/MemberInfosTab.tsx
 msgid "The email associated to this account"
@@ -18248,6 +18281,16 @@ msgstr "Це не виробничий інстанс."
 msgid "This is a relation to a Junction Object"
 msgstr "Це зв’язок із зв’язувальним об’єктом"
 
+#. js-lingui-id: 4Tslso
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "This is currently No and will be saved as Yes."
+msgstr ""
+
+#. js-lingui-id: n1He+q
+#: src/modules/ui/field/input/components/BooleanInput.tsx
+msgid "This is currently Yes and will be saved as No."
+msgstr ""
+
 #. js-lingui-id: E4JJ5C
 #: src/modules/object-record/record-index/components/RecordIndexRemoveSortingModal.tsx
 msgid "This is required to enable manual row reordering."
@@ -18282,6 +18325,11 @@ msgstr "Цей провайдер ще не має власного SDK — бу
 #: src/modules/information-banner/components/deleted-record/InformationBannerDeletedRecord.tsx
 msgid "This record has been deleted"
 msgstr "Цей запис було видалено"
+
+#. js-lingui-id: Ycq5oa
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "This record has no document attached."
+msgstr ""
 
 #. js-lingui-id: vbLBMd
 #: src/modules/settings/roles/role-permissions/object-level-permissions/object-form/components/SettingsRolePermissionsObjectLevelObjectFormObjectLevelTableRow.tsx
@@ -18340,6 +18388,11 @@ msgstr "Це подання використовує {usageLabel} у полі \"
 #: src/modules/object-record/record-index/utils/getNonReadableViewFieldSubTitle.ts
 msgid "This view uses {usageLabel} on object \"{0}\" which is not accessible."
 msgstr "Це подання використовує {usageLabel} в об'єкті \"{0}\", який недоступний."
+
+#. js-lingui-id: VJDGiR
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "This viewer only works inside a record page."
+msgstr ""
 
 #. js-lingui-id: yByRxz
 #: src/modules/settings/admin-panel/health-status/constants/WorkerQueueMetricsSelectOptions.ts
@@ -21046,6 +21099,11 @@ msgstr "Ваш план негайно переключиться на Pro, а �
 #: src/pages/settings/admin-panel/SettingsAdminNewAiProvider.tsx
 msgid "Your provider API key for authentication"
 msgstr "Ваш ключ API провайдера для аутентифікації"
+
+#. js-lingui-id: RvQOdC
+#: src/modules/documento/components/DocumentoViewer.tsx
+msgid "Your session could not be read. Reload the page."
+msgstr ""
 
 #. js-lingui-id: 319YPG
 #: src/pages/settings/enterprise/SettingsEnterprise.tsx
