@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
+import { type SystemWorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
 import { type CompanyScope } from 'src/engine/twenty-orm/utils/company-scope.type';
 
 // Works out which companies a person is allowed to see.
@@ -19,12 +20,26 @@ export class CompanyScopeResolverService {
   constructor(private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager) {}
 
   async resolve({
-    workspaceId,
+    workspace,
     workspaceMemberId,
   }: {
-    workspaceId: string;
+    workspace: SystemWorkspaceAuthContext['workspace'];
     workspaceMemberId: string;
   }): Promise<CompanyScope> {
+    // This runs during authentication, before the request has a workspace
+    // context, so the repository has to be opened inside one. A system context
+    // is the right shape here: we are establishing who the caller is, so there
+    // is no caller identity to borrow yet.
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      () => this.resolveInContext(workspace.id, workspaceMemberId),
+      { type: 'system', workspace },
+    );
+  }
+
+  private async resolveInContext(
+    workspaceId: string,
+    workspaceMemberId: string,
+  ): Promise<CompanyScope> {
     // Reading the access rows must bypass permission checks, and this is not a
     // shortcut: the very filter being resolved here would otherwise apply to
     // the lookup that decides it. This repository reads nothing but the access

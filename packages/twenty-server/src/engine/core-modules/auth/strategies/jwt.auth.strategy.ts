@@ -207,7 +207,7 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy, 'jwt') {
     // here and not in the query builder is the whole point: the builder runs on
     // every query and is synchronous, so it cannot look anything up.
     const companyScope = await this.companyScopeResolverService.resolve({
-      workspaceId: workspace.id,
+      workspace,
       workspaceMemberId: workspaceMember.id,
     });
 
