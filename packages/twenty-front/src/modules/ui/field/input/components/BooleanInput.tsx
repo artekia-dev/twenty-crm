@@ -21,23 +21,6 @@ const StyledEditableBooleanFieldContainer = styled.div<{ readonly?: boolean }>`
   width: 100%;
 `;
 
-// Green for yes, red for no, so the state reads at a glance across a long
-// table instead of having to be read word by word.
-//
-// The colour is a background on the value itself, not on the whole cell: a full
-// row of red would drown the rest of the record, and these fields sit next to
-// data that matters just as much.
-const StyledColouredValue = styled.div<{ value: boolean }>`
-  align-items: center;
-  background: ${({ value }) =>
-    value
-      ? themeCssVariables.tag.background.green
-      : themeCssVariables.tag.background.red};
-  border-radius: ${themeCssVariables.border.radius.sm};
-  display: inline-flex;
-  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[2]};
-`;
-
 type BooleanInputProps = {
   value: boolean;
   onToggle?: (newValue: boolean) => void;
@@ -83,9 +66,7 @@ export const BooleanInput = ({
         readonly={readonly}
         data-testid={testId}
       >
-        <StyledColouredValue value={internalValue}>
-          <BooleanDisplay value={internalValue} />
-        </StyledColouredValue>
+        <BooleanDisplay value={internalValue} />
       </StyledEditableBooleanFieldContainer>
       <ConfirmationModal
         modalInstanceId={modalInstanceId}
