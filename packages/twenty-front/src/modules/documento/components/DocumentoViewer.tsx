@@ -1,12 +1,12 @@
 import { styled } from '@linaria/react';
 import { t } from '@lingui/core/macro';
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { useTargetRecord } from '@/ui/layout/contexts/useTargetRecord';
 
 const StyledFrame = styled.iframe`
   border: none;
@@ -39,9 +39,10 @@ type DocumentoViewerProps = {
 // worth bundling.
 export const DocumentoViewer = ({ objeto }: DocumentoViewerProps) => {
   const tokenPair = useAtomStateValue(tokenPairState);
-  // The record page route carries the id; widget configuration cannot, since
-  // one widget serves every record of the object.
-  const { objectRecordId: recordId } = useParams();
+  // From the page context, not the route: the widget is rendered in places
+  // where the record id is not a route parameter, and widget configuration
+  // cannot carry it because one widget serves every record of the object.
+  const recordId = useTargetRecord()?.id;
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
