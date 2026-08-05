@@ -8,10 +8,50 @@ import { tokenPairState } from '@/auth/states/tokenPairState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useTargetRecord } from '@/ui/layout/contexts/useTargetRecord';
 
+const StyledContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+`;
+
+const StyledToolbar = styled.div`
+  align-items: center;
+  border-bottom: 1px solid ${themeCssVariables.border.color.light};
+  display: flex;
+  gap: ${themeCssVariables.spacing[2]};
+  justify-content: flex-end;
+  padding: ${themeCssVariables.spacing[2]};
+`;
+
+const StyledButton = styled.button`
+  background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  color: ${themeCssVariables.font.color.primary};
+  cursor: pointer;
+  font-family: inherit;
+  font-size: ${themeCssVariables.font.size.sm};
+  padding: ${themeCssVariables.spacing[1]} ${themeCssVariables.spacing[3]};
+
+  &:hover:not(:disabled) {
+    background: ${themeCssVariables.background.transparent.light};
+  }
+
+  &:disabled {
+    color: ${themeCssVariables.font.color.tertiary};
+    cursor: default;
+  }
+`;
+
+const StyledStatus = styled.span`
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.sm};
+`;
+
 const StyledFrame = styled.iframe`
   border: none;
   display: block;
-  height: 100%;
+  flex: 1;
   width: 100%;
 `;
 
@@ -23,6 +63,8 @@ const StyledMessage = styled.div`
 type DocumentoViewerProps = {
   objeto: 'factura' | 'albaran';
 };
+
+type RescanState = 'idle' | 'sending' | 'queued' | 'failed';
 
 // Shows the scanned document of an invoice or delivery note.
 //
@@ -45,6 +87,7 @@ export const DocumentoViewer = ({ objeto }: DocumentoViewerProps) => {
   const recordId = useTargetRecord()?.id;
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [rescan, setRescan] = useState<RescanState>('idle');
 
   useEffect(() => {
     const token = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
@@ -115,9 +158,66 @@ export const DocumentoViewer = ({ objeto }: DocumentoViewerProps) => {
     };
   }, [objeto, recordId, tokenPair]);
 
+  // Queues the record for a fresh extraction.
+  //
+  // Nothing is re-read here, and that is the point: the watcher already picks
+  // up anything left in PENDIENTE and reprocesses it forcing a new OCR, even
+  // though the file has not changed. So asking for a rescan is just setting
+  // that state and letting the machinery that already exists do the work.
+  //
+  // Worth having because the reading is done by a language model: the same
+  // document can be read correctly once and wrongly the next time. Without a
+  // way to ask again, the only fix for a bad reading was to edit the numbers
+  // by hand.
+  const requestRescan = async () => {
+    const token = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
+
+    if (!token || !recordId) return;
+
+    setRescan('sending');
+
+    try {
+      const response = await fetch(
+        `${REACT_APP_SERVER_BASE_URL}/rest/${objeto === 'factura' ? 'facturas' : 'albaranes'}/${recordId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ estadoExtraccion: 'PENDIENTE' }),
+        },
+      );
+
+      setRescan(response.ok ? 'queued' : 'failed');
+    } catch {
+      setRescan('failed');
+    }
+  };
+
   if (error) return <StyledMessage>{error}</StyledMessage>;
 
-  if (!objectUrl) return <StyledMessage>{t`Loading document…`}</StyledMessage>;
-
-  return <StyledFrame src={objectUrl} title={t`Document`} allow="fullscreen" />;
+  return (
+    <StyledContainer>
+      <StyledToolbar>
+        {rescan === 'queued' && (
+          <StyledStatus>{t`Queued. It will be read again within a minute.`}</StyledStatus>
+        )}
+        {rescan === 'failed' && (
+          <StyledStatus>{t`It could not be queued. Try again.`}</StyledStatus>
+        )}
+        <StyledButton
+          onClick={requestRescan}
+          disabled={rescan === 'sending' || !recordId}
+        >
+          {rescan === 'sending' ? t`Queueing…` : t`Read document again`}
+        </StyledButton>
+      </StyledToolbar>
+      {objectUrl ? (
+        <StyledFrame src={objectUrl} title={t`Document`} allow="fullscreen" />
+      ) : (
+        <StyledMessage>{t`Loading document…`}</StyledMessage>
+      )}
+    </StyledContainer>
+  );
 };
