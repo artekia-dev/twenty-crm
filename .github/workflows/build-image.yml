@@ -49,6 +49,14 @@ jobs:
             type=raw,value=latest
             type=sha,format=long
 
+      # APP_VERSION is validated with semver.parse() at boot and the server
+      # refuses to start if it fails, so a bare commit sha will not do. The
+      # sha rides along as build metadata, which semver allows, so the image
+      # still says which commit it came from.
+      - id: version
+        run: |
+          echo "value=$(node -p "require('./package.json').version")+$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -62,7 +70,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           build-args: |
-            APP_VERSION=${{ github.sha }}
+            APP_VERSION=${{ steps.version.outputs.value }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
