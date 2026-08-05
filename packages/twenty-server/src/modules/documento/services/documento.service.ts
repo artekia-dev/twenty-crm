@@ -135,15 +135,20 @@ export class DocumentoService {
 
     // The same read as the viewer, so the same permissions apply: a caller who
     // cannot see the invoice cannot have it reprocessed either.
-    const itemId = await this.itemIdDe({ authContext, objeto, recordId });
+    const documento = await this.itemIdDe({ authContext, objeto, recordId });
 
-    if (!itemId) return { ok: false, motivo: 'Este registro no tiene documento.' };
+    if (!documento) return { ok: false, motivo: 'Este registro no tiene documento.' };
+
+    // Typed rather than inlined into JSON.stringify, which accepts anything and
+    // would happily send an object where the watcher expects a string — it did,
+    // and the only sign was the watcher answering "falta itemId".
+    const peticion: { itemId: string } = { itemId: documento.itemId };
 
     try {
       const respuesta = await fetch(`${url}/releer`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-watcher-token': token },
-        body: JSON.stringify({ itemId }),
+        body: JSON.stringify(peticion),
         // Reading a document is OCR plus a language model: seconds, sometimes
         // tens of them. Cutting it off early would report a failure for work
         // that is going to finish anyway.
