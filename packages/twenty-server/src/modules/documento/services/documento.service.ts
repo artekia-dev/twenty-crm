@@ -46,15 +46,36 @@ export class DocumentoService {
     objeto: Objeto;
     recordId: string;
   }): Promise<{ stream: Readable; nombre: string } | null> {
+    const encontrado = await this.itemIdDe({ authContext, objeto, recordId });
+
+    if (!encontrado) return null;
+
+    const stream = await this.descargarDeSharePoint(encontrado.itemId);
+
+    return stream ? { stream, nombre: encontrado.fileName } : null;
+  }
+
+  // Which SharePoint file backs this record, read AS THE CALLER.
+  //
+  // Opened in the caller's workspace context, not a system one. That is the
+  // whole design: their company scope applies to this read, so an invoice they
+  // cannot see returns nothing — and everything downstream of this method
+  // inherits that check for free, without writing it twice.
+  //
+  // The context is passed in rather than read from ambient storage: the
+  // middleware that populates that storage is registered for the GraphQL and
+  // REST routes, not for these. Handing it a system context instead would
+  // quietly disable the only permission check these endpoints have.
+  private async itemIdDe({
+    authContext,
+    objeto,
+    recordId,
+  }: {
+    authContext: UserWorkspaceAuthContext;
+    objeto: Objeto;
+    recordId: string;
+  }): Promise<{ itemId: string; fileName: string } | null> {
     const workspaceId = authContext.workspace.id;
-    // Opened in the CALLER's workspace context, not a system one. That is the
-    // whole design: their company scope applies to this read, so an invoice
-    // they cannot see returns nothing and therefore yields no file.
-    //
-    // The context is passed in rather than read from ambient storage: the
-    // middleware that populates that storage is registered for the GraphQL and
-    // REST routes, not for this one. Handing it a system context instead would
-    // quietly disable the only permission check this endpoint has.
     // The repository has to be told which role is asking. Without it the ORM
     // assumes no permissions at all and refuses the read, which is the safe
     // default but not the answer here.
@@ -84,9 +105,69 @@ export class DocumentoService {
 
     if (typeof itemId !== 'string' || itemId.length === 0) return null;
 
-    const stream = await this.descargarDeSharePoint(itemId);
+    return { itemId, fileName: registro?.fileName ?? 'documento.pdf' };
+  }
 
-    return stream ? { stream, nombre: registro?.fileName ?? 'documento.pdf' } : null;
+  // Asks the watcher to read this document again, and waits for it.
+  //
+  // Twenty does not do the reading: it has no OCR, no extractor and no idea
+  // where the file lives. The watcher has all three and does exactly this every
+  // day. Duplicating any of it here would mean two paths to keep in step, and
+  // the second one always falls behind.
+  //
+  // Synchronous on purpose, even though it takes seconds. Somebody pressed a
+  // button and is watching the screen: they want the result, not a receipt.
+  async releer({
+    authContext,
+    objeto,
+    recordId,
+  }: {
+    authContext: UserWorkspaceAuthContext;
+    objeto: Objeto;
+    recordId: string;
+  }): Promise<{ ok: true } | { ok: false; motivo: string }> {
+    const url = process.env.WATCHER_URL?.replace(/\/$/, '');
+    const token = process.env.WATCHER_TOKEN;
+
+    if (!url || !token) {
+      return { ok: false, motivo: 'La relectura no está configurada en el servidor.' };
+    }
+
+    // The same read as the viewer, so the same permissions apply: a caller who
+    // cannot see the invoice cannot have it reprocessed either.
+    const itemId = await this.itemIdDe({ authContext, objeto, recordId });
+
+    if (!itemId) return { ok: false, motivo: 'Este registro no tiene documento.' };
+
+    try {
+      const respuesta = await fetch(`${url}/releer`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-watcher-token': token },
+        body: JSON.stringify({ itemId }),
+        // Reading a document is OCR plus a language model: seconds, sometimes
+        // tens of them. Cutting it off early would report a failure for work
+        // that is going to finish anyway.
+        signal: AbortSignal.timeout(120_000),
+      });
+
+      if (!respuesta.ok) {
+        const cuerpo = (await respuesta.text()).slice(0, 300);
+
+        this.logger.error(`Rescan failed for ${objeto} ${recordId}: ${cuerpo}`);
+
+        return { ok: false, motivo: 'El documento no se pudo leer. Inténtalo de nuevo.' };
+      }
+
+      return { ok: true };
+    } catch (error) {
+      this.logger.error(
+        `Rescan could not reach the watcher: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+
+      return { ok: false, motivo: 'El servicio de lectura no responde.' };
+    }
   }
 
   private async token(): Promise<string | null> {

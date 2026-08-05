@@ -4,6 +4,7 @@ import {
   Logger,
   NotFoundException,
   Param,
+  Post,
   Req,
   Res,
   UseGuards,
@@ -95,5 +96,59 @@ export class DocumentoController {
     response.setHeader('Cache-Control', 'private, no-store');
 
     await pipeline(documento.stream, response);
+  }
+
+  // Reads the document again, now, and answers with the outcome.
+  //
+  // The alternative was to flag the record and let the watcher pick it up on
+  // its next pass, which is simpler but makes somebody wait up to a minute
+  // staring at a screen for something they just asked for. A person pressing a
+  // button is not a background job.
+  @Post(':objeto/:recordId/releer')
+  async releer(
+    @Param('objeto') objeto: string,
+    @Param('recordId') recordId: string,
+    @Req() request: Request,
+  ): Promise<{ ok: boolean; motivo?: string }> {
+    if (objeto !== 'factura' && objeto !== 'albaran') {
+      throw new NotFoundException('Only invoices and delivery notes have documents.');
+    }
+
+    if (
+      !request.workspace ||
+      !request.user ||
+      !request.workspaceMember ||
+      !request.workspaceMemberId ||
+      !request.userWorkspaceId
+    ) {
+      throw new NotFoundException();
+    }
+
+    const authContext = buildUserAuthContext({
+      workspace: request.workspace,
+      userWorkspaceId: request.userWorkspaceId,
+      user: request.user,
+      workspaceMemberId: request.workspaceMemberId,
+      workspaceMember: request.workspaceMember,
+      companyScope: request.companyScope,
+    });
+
+    const resultado = await this.documentoService
+      .releer({ authContext, objeto, recordId })
+      .catch((error: unknown) => {
+        this.logger.error(
+          `Rescan of ${objeto} ${recordId} failed: ${
+            error instanceof Error ? `${error.message}\n${error.stack}` : String(error)
+          }`,
+        );
+
+        return { ok: false as const, motivo: 'No se pudo releer el documento.' };
+      });
+
+    // 200 with ok:false rather than an error status: the reasons here are
+    // things the person can act on — not configured, no document, service
+    // down — and each deserves its own sentence on screen instead of a status
+    // code the browser turns into "failed to fetch".
+    return resultado.ok ? { ok: true } : { ok: false, motivo: resultado.motivo };
   }
 }

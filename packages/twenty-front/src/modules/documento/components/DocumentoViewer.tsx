@@ -48,6 +48,27 @@ const StyledStatus = styled.span`
   font-size: ${themeCssVariables.font.size.sm};
 `;
 
+const StyledError = styled.span`
+  color: ${themeCssVariables.font.color.danger};
+  font-size: ${themeCssVariables.font.size.sm};
+`;
+
+const StyledSpinner = styled.span`
+  animation: documento-giro 0.7s linear infinite;
+  border: 2px solid ${themeCssVariables.border.color.medium};
+  border-radius: 50%;
+  border-top-color: ${themeCssVariables.font.color.primary};
+  display: inline-block;
+  height: 12px;
+  width: 12px;
+
+  @keyframes documento-giro {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+`;
+
 const StyledFrame = styled.iframe`
   border: none;
   display: block;
@@ -64,7 +85,11 @@ type DocumentoViewerProps = {
   objeto: 'factura' | 'albaran';
 };
 
-type RescanState = 'idle' | 'sending' | 'queued' | 'failed';
+type EstadoRelectura =
+  | { fase: 'inactivo' }
+  | { fase: 'leyendo' }
+  | { fase: 'hecho' }
+  | { fase: 'fallo'; motivo: string };
 
 // Shows the scanned document of an invoice or delivery note.
 //
@@ -87,7 +112,13 @@ export const DocumentoViewer = ({ objeto }: DocumentoViewerProps) => {
   const recordId = useTargetRecord()?.id;
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [rescan, setRescan] = useState<RescanState>('idle');
+  const [relectura, setRelectura] = useState<EstadoRelectura>({
+    fase: 'inactivo',
+  });
+  // Bumped after a successful reread so the frame reloads the file: the
+  // document may have been re-cropped or re-scanned, and showing the old bytes
+  // next to freshly extracted figures is how you end up mistrusting both.
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
     const token = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
@@ -96,13 +127,13 @@ export const DocumentoViewer = ({ objeto }: DocumentoViewerProps) => {
     // silence is indistinguishable from a slow one, and there is nothing to go
     // on when it happens.
     if (!token) {
-      setError(t`Your session could not be read. Reload the page.`);
+      setError(t`No se ha podido leer tu sesión. Recarga la página.`);
 
       return;
     }
 
     if (!recordId) {
-      setError(t`This viewer only works inside a record page.`);
+      setError(t`Este visor solo funciona dentro de la ficha de un registro.`);
 
       return;
     }
@@ -120,13 +151,15 @@ export const DocumentoViewer = ({ objeto }: DocumentoViewerProps) => {
         );
 
         if (response.status === 404) {
-          setError(t`This record has no document attached.`);
+          setError(t`Este registro no tiene documento adjunto.`);
 
           return;
         }
 
         if (!response.ok) {
-          setError(t`The document could not be loaded (${response.status}).`);
+          setError(
+            t`No se ha podido cargar el documento (${response.status}).`,
+          );
 
           return;
         }
@@ -142,7 +175,7 @@ export const DocumentoViewer = ({ objeto }: DocumentoViewerProps) => {
         setObjectUrl(url);
       } catch (e) {
         setError(
-          t`The document could not be loaded: ${e instanceof Error ? e.message : 'unknown error'}`,
+          t`No se ha podido cargar el documento: ${e instanceof Error ? e.message : 'error desconocido'}`,
         );
       }
     };
@@ -156,42 +189,52 @@ export const DocumentoViewer = ({ objeto }: DocumentoViewerProps) => {
       if (url) URL.revokeObjectURL(url);
       setObjectUrl(null);
     };
-  }, [objeto, recordId, tokenPair]);
+  }, [objeto, recordId, tokenPair, version]);
 
-  // Queues the record for a fresh extraction.
+  // Reads the document again and waits for the answer.
   //
-  // Nothing is re-read here, and that is the point: the watcher already picks
-  // up anything left in PENDIENTE and reprocesses it forcing a new OCR, even
-  // though the file has not changed. So asking for a rescan is just setting
-  // that state and letting the machinery that already exists do the work.
+  // The request blocks until the watcher has finished: OCR plus a language
+  // model, so seconds. That wait is deliberate — somebody pressed a button and
+  // is watching, so they get the outcome rather than a promise that something
+  // will happen later.
   //
-  // Worth having because the reading is done by a language model: the same
-  // document can be read correctly once and wrongly the next time. Without a
-  // way to ask again, the only fix for a bad reading was to edit the numbers
-  // by hand.
-  const requestRescan = async () => {
+  // Worth having at all because the figures are read by a language model, and
+  // the same document can be read correctly once and wrongly the next time.
+  // Without this, fixing a bad reading meant typing the numbers in by hand.
+  const releer = async () => {
     const token = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
 
     if (!token || !recordId) return;
 
-    setRescan('sending');
+    setRelectura({ fase: 'leyendo' });
 
     try {
       const response = await fetch(
-        `${REACT_APP_SERVER_BASE_URL}/rest/${objeto === 'factura' ? 'facturas' : 'albaranes'}/${recordId}`,
-        {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ estadoExtraccion: 'PENDIENTE' }),
-        },
+        `${REACT_APP_SERVER_BASE_URL}/documento/${objeto}/${recordId}/releer`,
+        { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
       );
 
-      setRescan(response.ok ? 'queued' : 'failed');
+      const cuerpo = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        motivo?: string;
+      } | null;
+
+      if (response.ok && cuerpo?.ok) {
+        setRelectura({ fase: 'hecho' });
+        setVersion((anterior) => anterior + 1);
+
+        return;
+      }
+
+      setRelectura({
+        fase: 'fallo',
+        motivo: cuerpo?.motivo ?? t`No se pudo leer el documento.`,
+      });
     } catch {
-      setRescan('failed');
+      setRelectura({
+        fase: 'fallo',
+        motivo: t`No se pudo contactar con el servidor.`,
+      });
     }
   };
 
@@ -200,23 +243,29 @@ export const DocumentoViewer = ({ objeto }: DocumentoViewerProps) => {
   return (
     <StyledContainer>
       <StyledToolbar>
-        {rescan === 'queued' && (
-          <StyledStatus>{t`Queued. It will be read again within a minute.`}</StyledStatus>
+        {relectura.fase === 'leyendo' && (
+          <>
+            <StyledSpinner />
+            <StyledStatus>{t`Leyendo el documento…`}</StyledStatus>
+          </>
         )}
-        {rescan === 'failed' && (
-          <StyledStatus>{t`It could not be queued. Try again.`}</StyledStatus>
+        {relectura.fase === 'hecho' && (
+          <StyledStatus>{t`Documento releído. Los datos están actualizados.`}</StyledStatus>
+        )}
+        {relectura.fase === 'fallo' && (
+          <StyledError>{relectura.motivo}</StyledError>
         )}
         <StyledButton
-          onClick={requestRescan}
-          disabled={rescan === 'sending' || !recordId}
+          onClick={releer}
+          disabled={relectura.fase === 'leyendo' || !recordId}
         >
-          {rescan === 'sending' ? t`Queueing…` : t`Read document again`}
+          {t`Volver a leer`}
         </StyledButton>
       </StyledToolbar>
       {objectUrl ? (
-        <StyledFrame src={objectUrl} title={t`Document`} allow="fullscreen" />
+        <StyledFrame src={objectUrl} title={t`Documento`} allow="fullscreen" />
       ) : (
-        <StyledMessage>{t`Loading document…`}</StyledMessage>
+        <StyledMessage>{t`Cargando documento…`}</StyledMessage>
       )}
     </StyledContainer>
   );
