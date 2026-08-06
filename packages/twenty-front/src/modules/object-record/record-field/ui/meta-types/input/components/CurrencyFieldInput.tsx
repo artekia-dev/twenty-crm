@@ -14,6 +14,7 @@ import { isFieldCurrencyValue } from '@/object-record/record-field/ui/types/guar
 import { useAvailableComponentInstanceIdOrThrow } from '@/ui/utilities/state/component-state/hooks/useAvailableComponentInstanceIdOrThrow';
 import { useContext } from 'react';
 import { convertCurrencyAmountToCurrencyMicros } from '~/utils/convertCurrencyToCurrencyMicros';
+import { parseCurrencyAmount } from '~/utils/parseCurrencyAmount';
 import { isUndefinedOrNull } from '~/utils/isUndefinedOrNull';
 
 export const CurrencyFieldInput = () => {
@@ -54,8 +55,7 @@ export const CurrencyFieldInput = () => {
     amountText: string;
     currencyCode: string;
   }) => {
-    const normalizedAmountText = amountText.replace(',', '.');
-    const amount = parseFloat(normalizedAmountText);
+    const amount = parseCurrencyAmount(amountText);
 
     const newCurrencyValue = {
       amountMicros: isNaN(amount)
