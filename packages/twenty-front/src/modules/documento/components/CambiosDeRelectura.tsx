@@ -1,6 +1,7 @@
 import { css } from '@linaria/core';
 import { styled } from '@linaria/react';
 import { t } from '@lingui/core/macro';
+import { createPortal } from 'react-dom';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 // Lo que va a cambiar al releer un documento, antes de que cambie.
@@ -44,13 +45,18 @@ const StyledCaja = styled.div`
   box-shadow: ${themeCssVariables.boxShadow.strong};
   display: flex;
   flex-direction: column;
+  /* Nunca mas alto que la pantalla: con veinte campos cambiados la lista
+     crece sin fin y los botones quedan fuera, sin forma de confirmar. */
   max-height: 80vh;
   max-width: 560px;
+  /* Que la cabecera y el pie no se encojan para dejarle sitio a la lista. */
+  min-height: 0;
   width: 100%;
 `;
 
 const StyledCabecera = styled.div`
   border-bottom: 1px solid ${themeCssVariables.border.color.light};
+  flex-shrink: 0;
   padding: ${themeCssVariables.spacing[4]};
 `;
 
@@ -70,6 +76,10 @@ const StyledSubtitulo = styled.p`
 const StyledLista = styled.div`
   display: flex;
   flex-direction: column;
+  /* min-height 0 es lo que permite que un hijo de un flex encoja por debajo de
+     su contenido. Sin el, la lista crece hasta ocupar lo que necesite, el
+     max-height de la caja no llega a aplicarse y no hay scroll. */
+  min-height: 0;
   overflow-y: auto;
   padding: ${themeCssVariables.spacing[2]} 0;
 `;
@@ -112,6 +122,8 @@ const StyledDespues = styled.span`
 
 const StyledPie = styled.div`
   border-top: 1px solid ${themeCssVariables.border.color.light};
+  /* Los botones se quedan siempre visibles: son la unica salida del dialogo. */
+  flex-shrink: 0;
   display: flex;
   gap: ${themeCssVariables.spacing[2]};
   justify-content: flex-end;
@@ -190,7 +202,11 @@ export const CambiosDeRelectura = ({
   error,
   alConfirmar,
   alCancelar,
-}: CambiosDeRelecturaProps) => (
+}: CambiosDeRelecturaProps) =>
+  // Se monta en el body y no donde vive el componente: `position: fixed` se
+  // ancla al ancestro mas cercano con `transform` o `filter`, no al viewport,
+  // y el dialogo salia encajado dentro del visor del documento.
+  createPortal(
   <StyledFondo role="dialog" aria-modal="true" onClick={alCancelar}>
     <StyledCaja onClick={(evento) => evento.stopPropagation()}>
       <StyledCabecera>
@@ -236,5 +252,6 @@ export const CambiosDeRelectura = ({
         </button>
       </StyledPie>
     </StyledCaja>
-  </StyledFondo>
-);
+  </StyledFondo>,
+    document.body,
+  );

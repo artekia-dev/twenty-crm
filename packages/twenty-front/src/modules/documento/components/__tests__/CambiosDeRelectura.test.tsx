@@ -99,3 +99,46 @@ describe('CambiosDeRelectura', () => {
     expect(screen.getByRole('button', { name: /Guardando/ })).toBeDisabled();
   });
 });
+
+// Con muchos campos cambiados la lista podría crecer sin fin y dejar los
+// botones fuera de la pantalla, sin forma de confirmar ni de cancelar.
+describe('con muchos cambios', () => {
+  const muchos = Array.from({ length: 25 }, (_, i) => ({
+    campo: `campo${i}`,
+    etiqueta: `Campo ${i}`,
+    antes: `viejo ${i}`,
+    despues: `nuevo ${i}`,
+  }));
+
+  it('los botones siguen ahí y la lista es la que se desplaza', () => {
+    render(
+      <CambiosDeRelectura
+        cambios={muchos}
+        aplicando={false}
+        alConfirmar={jest.fn()}
+        alCancelar={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: /Aplicar/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Dejarlo/ })).toBeInTheDocument();
+    expect(screen.getByText('Campo 24')).toBeInTheDocument();
+  });
+
+  it('el diálogo se monta en el body, no donde vive el componente', () => {
+    // position: fixed se ancla al ancestro con transform o filter, no al
+    // viewport: dentro del visor, el modal salía encajado en el recuadro del
+    // documento en vez de sobre la pantalla.
+    const { container } = render(
+      <CambiosDeRelectura
+        cambios={muchos.slice(0, 2)}
+        aplicando={false}
+        alConfirmar={jest.fn()}
+        alCancelar={jest.fn()}
+      />,
+    );
+
+    expect(container).toBeEmptyDOMElement();
+    expect(document.body.querySelector('[role="dialog"]')).not.toBeNull();
+  });
+});
