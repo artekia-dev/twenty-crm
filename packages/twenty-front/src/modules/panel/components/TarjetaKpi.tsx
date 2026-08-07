@@ -1,4 +1,5 @@
 import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { COLORES, type NombreColor } from '@/panel/tema/paleta';
 
@@ -22,31 +23,31 @@ type TarjetaKpiProps = {
 
 const StyledTarjeta = styled.button<{ pulsable: boolean }>`
   align-items: flex-start;
-  background: ${({ theme }) => theme.background.secondary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.md};
+  background: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.md};
   cursor: ${({ pulsable }) => (pulsable ? 'pointer' : 'default')};
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
   /* Alto igual en toda la fila aunque unas tengan detalle y otras no. */
   min-height: 96px;
   justify-content: center;
-  padding: ${({ theme }) => theme.spacing(3)};
+  padding: ${themeCssVariables.spacing[3]};
   text-align: left;
   transition: border-color 150ms;
   width: 100%;
 
   &:hover {
-    border-color: ${({ theme, pulsable }) =>
-      pulsable ? theme.border.color.strong : theme.border.color.light};
+    border-color: ${({ pulsable }) =>
+      pulsable ? themeCssVariables.border.color.strong : themeCssVariables.border.color.light};
   }
 `;
 
 const StyledTitulo = styled.span`
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${themeCssVariables.font.weight.medium};
   letter-spacing: 0.02em;
   text-transform: uppercase;
 `;
@@ -54,7 +55,7 @@ const StyledTitulo = styled.span`
 const StyledValor = styled.span<{ colorTexto: string }>`
   color: ${({ colorTexto }) => colorTexto};
   font-size: 26px;
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
   line-height: 1.15;
   /* Los importes se comparan en vertical entre tarjetas: con cifras de ancho
      fijo las unidades quedan alineadas y se ve cual es mayor sin leerlas. */
@@ -62,8 +63,8 @@ const StyledValor = styled.span<{ colorTexto: string }>`
 `;
 
 const StyledDetalle = styled.span`
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.xs};
 `;
 
 export const TarjetaKpi = ({

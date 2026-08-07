@@ -6,11 +6,15 @@
 // un trimestre. Aqui se escribe el importe entero, con puntos de miles y coma
 // decimal, que es como lo lee la persona que tiene la factura delante.
 
+// `useGrouping: 'always'` porque es-ES no separa los miles en numeros de cuatro
+// cifras: 2800 sale "2800,00 €" al lado de "1.250.230,38 €", y en una fila de
+// cifras que se comparan de un vistazo esa incoherencia hace dudar del dato.
 const EUROS = new Intl.NumberFormat('es-ES', {
   style: 'currency',
   currency: 'EUR',
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
+  useGrouping: 'always',
 });
 
 const EUROS_REDONDOS = new Intl.NumberFormat('es-ES', {
@@ -19,7 +23,7 @@ const EUROS_REDONDOS = new Intl.NumberFormat('es-ES', {
   maximumFractionDigits: 0,
 });
 
-const ENTERO = new Intl.NumberFormat('es-ES');
+const ENTERO = new Intl.NumberFormat('es-ES', { useGrouping: 'always' });
 
 export const formatearEuros = (importe: number): string => EUROS.format(importe);
 
@@ -65,4 +69,37 @@ export const etiquetaDeMes = (clave: string): string => {
   if (!ano || Number.isNaN(indice) || indice < 0 || indice > 11) return clave;
 
   return `${MESES_CORTOS[indice]} ${ano.slice(2)}`;
+};
+
+/**
+ * Marcas del eje de un grafico: valores redondos que se leen de cabeza.
+ *
+ * Repartir el maximo real en cuatro partes iguales deja el eje en 310 mil /
+ * 621 mil / 931 mil: numeros exactos que no sirven para estimar. Lo que se
+ * busca es un PASO redondo —1, 2, 2,5 o 5 por la potencia de diez que toque— y
+ * luego tantas marcas como hagan falta para cubrir el maximo. Asi el eje sale
+ * en 250 mil / 500 mil / 750 mil / 1 M y la altura de una barra se calcula
+ * mirandola, que es para lo que esta el eje.
+ */
+export const escalaBonita = (maximo: number, divisionesDeseadas = 4): number[] => {
+  if (!Number.isFinite(maximo) || maximo <= 0) return [];
+
+  const aproximado = maximo / divisionesDeseadas;
+  const magnitud = 10 ** Math.floor(Math.log10(aproximado));
+  const normalizado = aproximado / magnitud;
+
+  const paso =
+    (normalizado <= 1 ? 1 : normalizado <= 2 ? 2 : normalizado <= 2.5 ? 2.5 : normalizado <= 5 ? 5 : 10) *
+    magnitud;
+
+  const marcas: number[] = [];
+
+  // Hasta cubrir el maximo. Puede salir una marca mas o una menos de las
+  // pedidas: se prefiere eso a un eje con numeros que nadie sabe dividir.
+  for (let valor = paso; marcas.length < 8; valor += paso) {
+    marcas.push(valor);
+    if (valor >= maximo) break;
+  }
+
+  return marcas;
 };

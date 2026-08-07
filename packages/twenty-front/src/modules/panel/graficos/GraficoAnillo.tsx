@@ -1,4 +1,5 @@
 import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useState } from 'react';
 
 import { formatearEntero, formatearPorcentaje } from '@/panel/tema/formato';
@@ -30,7 +31,7 @@ const StyledContenedor = styled.div`
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(4)};
+  gap: ${themeCssVariables.spacing[4]};
   justify-content: center;
 `;
 
@@ -51,15 +52,15 @@ const StyledCentro = styled.div`
 `;
 
 const StyledCentroValor = styled.div`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.xl};
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.xl};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
   line-height: 1.1;
 `;
 
 const StyledCentroEtiqueta = styled.div`
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.xs};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
   margin-top: 2px;
   max-width: ${TAMANO - GROSOR * 2 - 8}px;
 `;
@@ -67,7 +68,7 @@ const StyledCentroEtiqueta = styled.div`
 const StyledLeyenda = styled.ul`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
   list-style: none;
   margin: 0;
   min-width: 160px;
@@ -78,17 +79,17 @@ const StyledLeyendaFila = styled.li`
   align-items: center;
   cursor: pointer;
   display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
   justify-content: space-between;
   min-height: 32px;
 `;
 
 const StyledLeyendaNombre = styled.span`
   align-items: center;
-  color: ${({ theme }) => theme.font.color.secondary};
+  color: ${themeCssVariables.font.color.secondary};
   display: flex;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  gap: ${({ theme }) => theme.spacing(2)};
+  font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[2]};
 `;
 
 const StyledPunto = styled.span<{ color: string }>`
@@ -101,15 +102,15 @@ const StyledPunto = styled.span<{ color: string }>`
 `;
 
 const StyledLeyendaValor = styled.span`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
 `;
 
 const StyledVacio = styled.div`
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  padding: ${({ theme }) => theme.spacing(6)} 0;
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.sm};
+  padding: ${themeCssVariables.spacing[6]} 0;
   text-align: center;
   width: 100%;
 `;

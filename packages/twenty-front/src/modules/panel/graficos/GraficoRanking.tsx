@@ -1,4 +1,5 @@
 import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { formatearEuros, formatearPorcentaje } from '@/panel/tema/formato';
 
@@ -27,59 +28,59 @@ type GraficoRankingProps = {
 const StyledLista = styled.ul`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
   list-style: none;
   margin: 0;
   padding: 0;
 `;
 
 const StyledFila = styled.li<{ pulsable: boolean }>`
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  border-radius: ${themeCssVariables.border.radius.sm};
   cursor: ${({ pulsable }) => (pulsable ? 'pointer' : 'default')};
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
   /* Alto comodo para el dedo: 44px es el minimo que se acierta sin fallar. */
   min-height: 44px;
   justify-content: center;
-  padding: ${({ theme }) => theme.spacing(1)};
+  padding: ${themeCssVariables.spacing[1]};
 
   &:hover {
-    background: ${({ theme, pulsable }) =>
-      pulsable ? theme.background.transparent.lighter : 'transparent'};
+    background: ${({ pulsable }) =>
+      pulsable ? themeCssVariables.background.transparent.lighter : 'transparent'};
   }
 `;
 
 const StyledCabecera = styled.div`
   align-items: baseline;
   display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${themeCssVariables.spacing[2]};
   justify-content: space-between;
 `;
 
 const StyledNombre = styled.span`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
 
 const StyledImporte = styled.span`
-  color: ${({ theme }) => theme.font.color.primary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  font-weight: ${({ theme }) => theme.font.weight.medium};
+  color: ${themeCssVariables.font.color.primary};
+  font-size: ${themeCssVariables.font.size.sm};
+  font-weight: ${themeCssVariables.font.weight.medium};
   white-space: nowrap;
 `;
 
 const StyledPeso = styled.span`
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  margin-left: ${({ theme }) => theme.spacing(1)};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
+  margin-left: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledCarril = styled.div`
-  background: ${({ theme }) => theme.background.transparent.light};
+  background: ${themeCssVariables.background.transparent.light};
   border-radius: 3px;
   height: 6px;
   overflow: hidden;
@@ -94,9 +95,9 @@ const StyledBarra = styled.div<{ color: string }>`
 `;
 
 const StyledVacio = styled.div`
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  padding: ${({ theme }) => theme.spacing(4)} 0;
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.sm};
+  padding: ${themeCssVariables.spacing[4]} 0;
   text-align: center;
 `;
 

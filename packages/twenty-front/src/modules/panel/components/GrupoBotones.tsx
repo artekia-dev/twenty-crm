@@ -1,4 +1,5 @@
 import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 // Filtros y ordenaciones que viven DENTRO del grafico.
 //
@@ -27,32 +28,32 @@ type GrupoBotonesProps<T extends string> = {
 
 const StyledGrupo = styled.div`
   align-items: center;
-  background: ${({ theme }) => theme.background.transparent.lighter};
-  border-radius: ${({ theme }) => theme.border.radius.sm};
+  background: ${themeCssVariables.background.transparent.lighter};
+  border-radius: ${themeCssVariables.border.radius.sm};
   display: inline-flex;
   gap: 2px;
   padding: 2px;
 `;
 
 const StyledBoton = styled.button<{ activo: boolean }>`
-  background: ${({ theme, activo }) =>
-    activo ? theme.background.primary : 'transparent'};
+  background: ${({ activo }) =>
+    activo ? themeCssVariables.background.primary : 'transparent'};
   border: none;
-  border-radius: ${({ theme }) => theme.border.radius.sm};
-  box-shadow: ${({ theme, activo }) => (activo ? theme.boxShadow.light : 'none')};
-  color: ${({ theme, activo }) =>
-    activo ? theme.font.color.primary : theme.font.color.tertiary};
+  border-radius: ${themeCssVariables.border.radius.sm};
+  box-shadow: ${({ activo }) => (activo ? themeCssVariables.boxShadow.light : 'none')};
+  color: ${({ activo }) =>
+    activo ? themeCssVariables.font.color.primary : themeCssVariables.font.color.tertiary};
   cursor: pointer;
-  font-size: ${({ theme }) => theme.font.size.xs};
-  font-weight: ${({ theme, activo }) =>
-    activo ? theme.font.weight.medium : theme.font.weight.regular};
+  font-size: ${themeCssVariables.font.size.xs};
+  font-weight: ${({ activo }) =>
+    activo ? themeCssVariables.font.weight.medium : themeCssVariables.font.weight.regular};
   /* 32px de alto: lo minimo que un dedo acierta sin ampliar. */
   min-height: 32px;
-  padding: 0 ${({ theme }) => theme.spacing(2)};
+  padding: 0 ${themeCssVariables.spacing[2]};
   white-space: nowrap;
 
   &:hover {
-    color: ${({ theme }) => theme.font.color.primary};
+    color: ${themeCssVariables.font.color.primary};
   }
 `;
 

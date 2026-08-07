@@ -4,6 +4,7 @@ import {
   calcularSerieMensual,
 } from '@/panel/datos/resumenPanel';
 import { type FacturaPanel } from '@/panel/datos/usePanelFacturas';
+import { escalaBonita } from '@/panel/tema/formato';
 
 // Un total mal sumado en un panel no se nota: el numero sale, parece razonable
 // y nadie lo comprueba contra la contabilidad hasta el cierre. Por eso los
@@ -170,5 +171,29 @@ describe('agruparPor', () => {
     const filas = agruparPor([factura({ contraparte: null })], porContraparte, 'importe');
 
     expect(filas).toEqual([]);
+  });
+});
+
+describe('escalaBonita', () => {
+  it('da valores redondos que se leen de cabeza', () => {
+    // Repartir el maximo en cuatro daria 310 mil / 621 mil / 931 mil: exactos
+    // e inutiles para estimar la altura de una barra.
+    expect(escalaBonita(1_242_000)).toEqual([500_000, 1_000_000, 1_500_000]);
+    expect(escalaBonita(3_200_000)).toEqual([1e6, 2e6, 3e6, 4e6]);
+    expect(escalaBonita(829)).toEqual([250, 500, 750, 1000]);
+  });
+
+  it('la ultima marca siempre cubre el maximo', () => {
+    for (const maximo of [1, 99, 121, 45_000, 1_242_000, 7_654_321]) {
+      const marcas = escalaBonita(maximo);
+
+      expect(marcas.at(-1)).toBeGreaterThanOrEqual(maximo);
+    }
+  });
+
+  it('sin datos no devuelve marcas, en vez de un eje inventado', () => {
+    expect(escalaBonita(0)).toEqual([]);
+    expect(escalaBonita(-5)).toEqual([]);
+    expect(escalaBonita(Number.NaN)).toEqual([]);
   });
 });

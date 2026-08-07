@@ -1,8 +1,14 @@
 import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useState } from 'react';
 
 import { useAnchoContenedor } from '@/panel/hooks/useAnchoContenedor';
-import { etiquetaDeMes, formatearEuros } from '@/panel/tema/formato';
+import {
+  escalaBonita,
+  etiquetaDeMes,
+  formatearEuros,
+  formatearEurosCortos,
+} from '@/panel/tema/formato';
 import { COLORES } from '@/panel/tema/paleta';
 
 // Compras y ventas por mes.
@@ -29,6 +35,10 @@ type GraficoMesesProps = {
 const ALTO = 240;
 const ALTO_EJE = 24;
 const ANCHO_MINIMO_ETIQUETA = 52;
+// Sitio para el eje vertical. Sin el, las barras solo dicen cual es mayor que
+// cual: no se sabe si la mas alta son diez mil euros o un millon, y eso es lo
+// primero que pregunta quien mira el grafico.
+const ANCHO_EJE_Y = 62;
 
 const StyledContenedor = styled.div`
   position: relative;
@@ -36,7 +46,7 @@ const StyledContenedor = styled.div`
 `;
 
 const StyledEtiquetaEje = styled.text`
-  fill: ${({ theme }) => theme.font.color.tertiary};
+  fill: ${themeCssVariables.font.color.tertiary};
   font-size: 11px;
 `;
 
@@ -46,20 +56,20 @@ const StyledZonaTactil = styled.rect`
 `;
 
 const StyledFondoMes = styled.rect`
-  fill: ${({ theme }) => theme.background.transparent.light};
+  fill: ${themeCssVariables.background.transparent.light};
 `;
 
 const StyledLineaGuia = styled.line`
-  stroke: ${({ theme }) => theme.border.color.light};
+  stroke: ${themeCssVariables.border.color.light};
   stroke-dasharray: 3 3;
 `;
 
 const StyledGlobo = styled.div`
-  background: ${({ theme }) => theme.background.primary};
-  border: 1px solid ${({ theme }) => theme.border.color.medium};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  box-shadow: ${({ theme }) => theme.boxShadow.light};
-  padding: ${({ theme }) => theme.spacing(2)};
+  background: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.md};
+  box-shadow: ${themeCssVariables.boxShadow.light};
+  padding: ${themeCssVariables.spacing[2]};
   pointer-events: none;
   position: absolute;
   top: 0;
@@ -68,25 +78,25 @@ const StyledGlobo = styled.div`
 `;
 
 const StyledGloboMes = styled.div`
-  color: ${({ theme }) => theme.font.color.secondary};
-  font-size: ${({ theme }) => theme.font.size.xs};
-  margin-bottom: ${({ theme }) => theme.spacing(1)};
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.xs};
+  margin-bottom: ${themeCssVariables.spacing[1]};
   text-transform: capitalize;
 `;
 
 const StyledGloboFila = styled.div`
   align-items: center;
   display: flex;
-  font-size: ${({ theme }) => theme.font.size.sm};
-  gap: ${({ theme }) => theme.spacing(2)};
+  font-size: ${themeCssVariables.font.size.sm};
+  gap: ${themeCssVariables.spacing[2]};
   justify-content: space-between;
 `;
 
 const StyledEtiquetaSerie = styled.span`
   align-items: center;
-  color: ${({ theme }) => theme.font.color.secondary};
+  color: ${themeCssVariables.font.color.secondary};
   display: flex;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${themeCssVariables.spacing[1]};
 `;
 
 const StyledPunto = styled.span<{ color: string }>`
@@ -99,9 +109,9 @@ const StyledPunto = styled.span<{ color: string }>`
 
 const StyledVacio = styled.div`
   align-items: center;
-  color: ${({ theme }) => theme.font.color.tertiary};
+  color: ${themeCssVariables.font.color.tertiary};
   display: flex;
-  font-size: ${({ theme }) => theme.font.size.sm};
+  font-size: ${themeCssVariables.font.size.sm};
   height: ${ALTO}px;
   justify-content: center;
 `;
@@ -128,12 +138,17 @@ export const GraficoMeses = ({
   );
 
   const altoUtil = ALTO - ALTO_EJE;
-  const anchoMes = datos.length > 0 ? ancho / datos.length : 0;
-  const alturaDe = (valor: number) => (valor / maximo) * (altoUtil - 12);
+  const anchoGrafico = Math.max(ancho - ANCHO_EJE_Y, 0);
+  const anchoMes = datos.length > 0 ? anchoGrafico / datos.length : 0;
+  const alturaDe = (valor: number) => (valor / (marcas.at(-1) ?? maximo)) * (altoUtil - 12);
 
   // Cuantas etiquetas caben de verdad. Con 24 meses en un movil solo entran
   // tres o cuatro; pintarlas todas las deja ilegibles y pisadas.
   const salto = Math.max(1, Math.ceil(ANCHO_MINIMO_ETIQUETA / Math.max(anchoMes, 1)));
+  const marcas = escalaBonita(maximo);
+  // Las barras se miden contra el tope redondo del eje, no contra el maximo
+  // real, o la barra mas alta tocaria el techo y no cuadraria con su marca.
+  const tope = marcas.at(-1) ?? maximo;
   const activo = mesActivo !== null ? datos[mesActivo] : undefined;
 
   if (datos.length === 0 || series.length === 0) {
@@ -152,16 +167,21 @@ export const GraficoMeses = ({
     <StyledContenedor ref={ref}>
       {ancho > 0 && (
         <svg width={ancho} height={ALTO} role="img" aria-label="Compras y ventas por mes">
-          {[0.25, 0.5, 0.75, 1].map((fraccion) => {
-            const y = altoUtil - alturaDe(maximo * fraccion);
+          {marcas.map((marca) => {
+            const y = altoUtil - alturaDe(marca);
 
             return (
-              <StyledLineaGuia key={fraccion} x1={0} x2={ancho} y1={y} y2={y} />
+              <g key={marca}>
+                <StyledLineaGuia x1={ANCHO_EJE_Y} x2={ancho} y1={y} y2={y} />
+                <StyledEtiquetaEje x={ANCHO_EJE_Y - 8} y={y + 4} textAnchor="end">
+                  {formatearEurosCortos(marca)}
+                </StyledEtiquetaEje>
+              </g>
             );
           })}
 
           {datos.map((punto, indice) => {
-            const x0 = indice * anchoMes;
+            const x0 = ANCHO_EJE_Y + indice * anchoMes;
             const anchoBarra = (anchoMes * 0.6) / series.length;
             const sobra = anchoMes - anchoBarra * series.length;
 
@@ -217,7 +237,7 @@ export const GraficoMeses = ({
         <StyledGlobo
           style={{
             left: Math.min(
-              Math.max(0, (mesActivo ?? 0) * anchoMes + anchoMes / 2 - 84),
+              Math.max(0, ANCHO_EJE_Y + (mesActivo ?? 0) * anchoMes + anchoMes / 2 - 84),
               Math.max(0, ancho - 168),
             ),
           }}

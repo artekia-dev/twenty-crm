@@ -1,4 +1,5 @@
 import { styled } from '@linaria/react';
+import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useMemo, useState } from 'react';
 
 import { GrupoBotones } from '@/panel/components/GrupoBotones';
@@ -32,15 +33,15 @@ import { COLORES, colorDeCategoria } from '@/panel/tema/paleta';
 const StyledPagina = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(6)};
+  gap: ${themeCssVariables.spacing[6]};
   margin: 0 auto;
   max-width: 1180px;
-  padding: ${({ theme }) => theme.spacing(6)} ${({ theme }) => theme.spacing(4)};
+  padding: ${themeCssVariables.spacing[6]} ${themeCssVariables.spacing[4]};
   width: 100%;
 
   @media (max-width: 640px) {
-    gap: ${({ theme }) => theme.spacing(4)};
-    padding: ${({ theme }) => theme.spacing(4)} ${({ theme }) => theme.spacing(3)};
+    gap: ${themeCssVariables.spacing[4]};
+    padding: ${themeCssVariables.spacing[4]} ${themeCssVariables.spacing[3]};
   }
 `;
 
@@ -48,7 +49,7 @@ const StyledCabecera = styled.header`
   align-items: flex-end;
   display: flex;
   flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(3)};
+  gap: ${themeCssVariables.spacing[3]};
   justify-content: space-between;
 `;
 
@@ -59,15 +60,15 @@ const StyledTitulos = styled.div`
 `;
 
 const StyledTitulo = styled.h1`
-  color: ${({ theme }) => theme.font.color.primary};
+  color: ${themeCssVariables.font.color.primary};
   font-size: 22px;
-  font-weight: ${({ theme }) => theme.font.weight.semiBold};
+  font-weight: ${themeCssVariables.font.weight.semiBold};
   margin: 0;
 `;
 
 const StyledSubtitulo = styled.p`
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.sm};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.sm};
   margin: 0;
 `;
 
@@ -75,29 +76,29 @@ const StyledSubtitulo = styled.p`
 // tableta y una en movil, sin un breakpoint por cada caso.
 const StyledCifras = styled.div`
   display: grid;
-  gap: ${({ theme }) => theme.spacing(3)};
+  gap: ${themeCssVariables.spacing[3]};
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 `;
 
 const StyledGraficos = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(4)};
+  gap: ${themeCssVariables.spacing[4]};
 `;
 
 const StyledDosColumnas = styled.div`
   display: grid;
-  gap: ${({ theme }) => theme.spacing(4)};
+  gap: ${themeCssVariables.spacing[4]};
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
 `;
 
 const StyledAviso = styled.div`
-  background: ${({ theme }) => theme.background.secondary};
-  border: 1px solid ${({ theme }) => theme.border.color.light};
-  border-radius: ${({ theme }) => theme.border.radius.md};
-  color: ${({ theme }) => theme.font.color.tertiary};
-  font-size: ${({ theme }) => theme.font.size.sm};
-  padding: ${({ theme }) => theme.spacing(6)};
+  background: ${themeCssVariables.background.secondary};
+  border: 1px solid ${themeCssVariables.border.color.light};
+  border-radius: ${themeCssVariables.border.radius.md};
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.sm};
+  padding: ${themeCssVariables.spacing[6]};
   text-align: center;
 `;
 
@@ -210,13 +211,13 @@ export const PanelHolding = () => {
         <TarjetaKpi
           titulo="Sin contabilizar"
           valor={formatearEuros(resumen.importePendiente)}
-          detalle={`${formatearEntero(resumen.pendientesDeContabilizar)} facturas`}
+          detalle={`${formatearEntero(resumen.pendientesDeContabilizar)} facturas · IVA incluido`}
           color="pendiente"
         />
         <TarjetaKpi
           titulo="Pendiente de pago"
           valor={formatearEuros(resumen.importePendienteDePago)}
-          detalle={`${formatearEntero(resumen.pendientesDePago)} compras sin pagar`}
+          detalle={`${formatearEntero(resumen.pendientesDePago)} compras · IVA incluido`}
         />
       </StyledCifras>
 
