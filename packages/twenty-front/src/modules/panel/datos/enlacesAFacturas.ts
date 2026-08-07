@@ -51,6 +51,9 @@ export const enlacesDePanel = ({ desde, sociedadId }: ContextoEnlaces) => {
 
     sinContabilizar: (): string => enlace({ contabilizada: { IS: 'false' } }),
 
+    /** La bandeja: lo que falta por comprobar, y por eso no suma en el panel. */
+    sinValidar: (): string => enlace({ validada: { IS: 'false' } }),
+
     sinPagar: (): string =>
       enlace({ direccion: { IS: ['COMPRA'] }, pagada: { IS: 'false' } }),
 

@@ -5,7 +5,10 @@ import {
   calcularResumen,
   calcularSerieMensual,
 } from '@/panel/datos/resumenPanel';
-import { type FacturaPanel } from '@/panel/datos/usePanelFacturas';
+import {
+  partirPorValidacion,
+  type FacturaPanel,
+} from '@/panel/datos/usePanelFacturas';
 import { escalaBonita } from '@/panel/tema/formato';
 
 // Un total mal sumado en un panel no se nota: el numero sale, parece razonable
@@ -18,6 +21,7 @@ const factura = (over: Partial<FacturaPanel> = {}): FacturaPanel => ({
   fechaEmision: '2026-03-15T00:00:00.000Z',
   direccion: 'COMPRA',
   contabilizada: true,
+  validada: true,
   pagada: true,
   conciliada: false,
   estadoExtraccion: 'OK',
@@ -314,5 +318,32 @@ describe('calcularAntiguedad', () => {
     );
 
     expect(tramos).toHaveLength(1);
+  });
+});
+
+// Un panel es para decidir. Decidir sobre importes que nadie ha comprobado es
+// peor que no tener panel: la cifra parece igual de firme la hayan revisado o no.
+describe('solo cuenta lo validado', () => {
+  it('deja fuera lo que nadie ha comprobado', () => {
+    const { validadas, sinValidar } = partirPorValidacion([
+      factura({ validada: true }),
+      factura({ validada: false }),
+    ]);
+
+    expect(validadas).toHaveLength(1);
+    expect(sinValidar).toHaveLength(1);
+  });
+
+  // Una factura que entró antes de que el campo existiera no está validada:
+  // nadie la ha mirado. Tratarla como validada metería en las sumas justo los
+  // importes que no se han comprobado.
+  it('el campo vacío cuenta como sin validar, no como validada', () => {
+    const { validadas, sinValidar } = partirPorValidacion([
+      factura({ validada: null }),
+      factura({ validada: undefined as unknown as null }),
+    ]);
+
+    expect(validadas).toHaveLength(0);
+    expect(sinValidar).toHaveLength(2);
   });
 });

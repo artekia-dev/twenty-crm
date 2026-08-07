@@ -1,6 +1,7 @@
 import { styled } from '@linaria/react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { GrupoBotones } from '@/panel/components/GrupoBotones';
 import { TarjetaGrafico } from '@/panel/components/TarjetaGrafico';
@@ -12,6 +13,7 @@ import {
   calcularIva,
   calcularResumen,
   calcularSerieMensual,
+  importeDe,
   type OrdenRanking,
 } from '@/panel/datos/resumenPanel';
 import { normalizarNif, useEmpresas } from '@/panel/datos/useEmpresas';
@@ -96,6 +98,25 @@ const StyledAvisoTruncado = styled.div`
   padding: ${themeCssVariables.spacing[3]};
 `;
 
+// Aviso, no error: lo que falta por validar es trabajo, no una averia. Se
+// pincha y lleva a esas facturas, porque quien lo lee lo siguiente que quiere
+// es verlas.
+const StyledAvisoSinValidar = styled(Link)`
+  background: ${themeCssVariables.background.transparent.light};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-left: 3px solid ${themeCssVariables.font.color.tertiary};
+  border-radius: ${themeCssVariables.border.radius.md};
+  color: ${themeCssVariables.font.color.secondary};
+  display: block;
+  font-size: ${themeCssVariables.font.size.sm};
+  padding: ${themeCssVariables.spacing[3]};
+  text-decoration: none;
+
+  &:hover {
+    background: ${themeCssVariables.background.transparent.lighter};
+  }
+`;
+
 const StyledBarraIva = styled.div`
   display: flex;
   justify-content: flex-end;
@@ -170,7 +191,7 @@ export const PanelFacturacion = ({ sociedadId, titulo }: PanelFacturacionProps) 
   const conIva = iva === 'con';
   const [verTodasLasSociedades, setVerTodasLasSociedades] = useState(true);
 
-  const { facturas, cargando, error, desde, truncado, totalReal } = usePanelFacturas(
+  const { facturas, sinValidar, cargando, error, desde, truncado, totalReal } = usePanelFacturas(
     periodo,
     sociedadId,
   );
@@ -327,10 +348,28 @@ export const PanelFacturacion = ({ sociedadId, titulo }: PanelFacturacionProps) 
 
       {truncado && (
         <StyledAvisoTruncado>
-          Se están sumando {formatearEntero(facturas.length)} facturas de{' '}
-          {formatearEntero(totalReal)}. Las cifras de esta pantalla no están completas:
-          acota el periodo para verlas todas.
+          Se han traído {formatearEntero(facturas.length + sinValidar.length)} facturas
+          de {formatearEntero(totalReal)}. Las cifras de esta pantalla no están
+          completas: acota el periodo para verlas todas.
         </StyledAvisoTruncado>
+      )}
+
+      {/* Sin esto, un panel a cero se lee como una avería en vez de como trabajo
+          pendiente, que es lo que es. Y lleva a la lista de lo que falta. */}
+      {sinValidar.length > 0 && (
+        <StyledAvisoSinValidar to={enlaces.sinValidar()}>
+          <strong>
+            {sinValidar.length === 1
+              ? '1 factura sin validar'
+              : `${formatearEntero(sinValidar.length)} facturas sin validar`}
+          </strong>{' '}
+          por{' '}
+          {formatearEuros(
+            sinValidar.reduce((suma, f) => suma + importeDe(f, iva === 'con'), 0),
+          )}
+          . No entran en
+          ninguna cifra de esta pantalla hasta que alguien las compruebe.
+        </StyledAvisoSinValidar>
       )}
 
       <StyledBarraIva>

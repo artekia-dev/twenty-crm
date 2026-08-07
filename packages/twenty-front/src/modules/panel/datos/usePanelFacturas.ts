@@ -25,6 +25,7 @@ export type FacturaPanel = {
   fechaEmision: string | null;
   direccion: 'COMPRA' | 'VENTA' | 'DESCONOCIDA' | null;
   contabilizada: boolean | null;
+  validada: boolean | null;
   pagada: boolean | null;
   conciliada: boolean | null;
   estadoExtraccion: string | null;
@@ -43,6 +44,7 @@ const CAMPOS = {
   fechaEmision: true,
   direccion: true,
   contabilizada: true,
+  validada: true,
   pagada: true,
   conciliada: true,
   estadoExtraccion: true,
@@ -101,8 +103,25 @@ export const usePanelFacturas = (periodo: Periodo, sociedadId?: string) => {
   // los cortes se calculen en cliente, hay que decirlo en pantalla.
   const truncado = totalCount !== undefined && totalCount > records.length;
 
+  // SOLO CUENTA LO VALIDADO.
+  //
+  // Un panel es para decidir, y decidir sobre importes que nadie ha comprobado
+  // es peor que no tener panel: el numero parece igual de firme lo hayan
+  // revisado o no. Lo leido por el modelo entra en el CRM, pero no en las
+  // sumas, hasta que una persona da el visto bueno.
+  //
+  // Se piden todas y se parten aqui en vez de filtrar en servidor porque lo que
+  // queda fuera hay que ENSENARLO. Un panel a cero sin explicacion se lee como
+  // una averia; "quedan 40 facturas por validar" se lee como trabajo pendiente,
+  // que es lo que es.
+  const { validadas, sinValidar } = useMemo(
+    () => partirPorValidacion(records),
+    [records],
+  );
+
   return {
-    facturas: records,
+    facturas: validadas,
+    sinValidar,
     cargando: loading,
     error,
     desde,
@@ -110,6 +129,21 @@ export const usePanelFacturas = (periodo: Periodo, sociedadId?: string) => {
     totalReal: totalCount ?? records.length,
   };
 };
+
+/**
+ * Separa lo comprobado de lo que aún no.
+ *
+ * Solo `true` cuenta como validada. Un campo vacío —una factura que entró antes
+ * de que el campo existiera, o que nadie ha abierto todavía— es exactamente lo
+ * que no se ha comprobado, y tratarlo como validado metería en las sumas justo
+ * los importes que nadie ha mirado.
+ */
+export const partirPorValidacion = (
+  facturas: FacturaPanel[],
+): { validadas: FacturaPanel[]; sinValidar: FacturaPanel[] } => ({
+  validadas: facturas.filter((f) => f.validada === true),
+  sinValidar: facturas.filter((f) => f.validada !== true),
+});
 
 /** Euros a partir del campo de importe del CRM, que viaja en micros. */
 export const euros = (importe: { amountMicros: number | null } | null): number =>
