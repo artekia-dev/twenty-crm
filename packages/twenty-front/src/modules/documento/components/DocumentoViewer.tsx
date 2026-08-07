@@ -1,5 +1,9 @@
 import { styled } from '@linaria/react';
 import { t } from '@lingui/core/macro';
+import {
+  CambiosDeRelectura,
+  type CambioPropuesto,
+} from '@/documento/components/CambiosDeRelectura';
 import { useEffect, useState } from 'react';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
@@ -88,7 +92,10 @@ type DocumentoViewerProps = {
 type EstadoRelectura =
   | { fase: 'inactivo' }
   | { fase: 'leyendo' }
-  | { fase: 'hecho' }
+  // Ya se sabe qué cambiaría, pero no se ha tocado nada: espera confirmación.
+  | { fase: 'confirmando'; propuestaId: string; cambios: CambioPropuesto[] }
+  | { fase: 'aplicando'; propuestaId: string; cambios: CambioPropuesto[] }
+  | { fase: 'hecho'; mensaje: string }
   | { fase: 'fallo'; motivo: string };
 
 // Shows the scanned document of an invoice or delivery note.
@@ -209,27 +216,100 @@ export const DocumentoViewer = ({ objeto }: DocumentoViewerProps) => {
     setRelectura({ fase: 'leyendo' });
 
     try {
+      // Pide qué cambiaría. No cambia nada todavía.
       const response = await fetch(
-        `${REACT_APP_SERVER_BASE_URL}/documento/${objeto}/${recordId}/releer`,
+        `${REACT_APP_SERVER_BASE_URL}/documento/${objeto}/${recordId}/proponer-relectura`,
         { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
       );
 
       const cuerpo = (await response.json().catch(() => null)) as {
         ok?: boolean;
+        propuestaId?: string;
+        cambios?: CambioPropuesto[];
+        sinCambios?: boolean;
         motivo?: string;
       } | null;
 
-      if (response.ok && cuerpo?.ok) {
-        setRelectura({ fase: 'hecho' });
-        setVersion((anterior) => anterior + 1);
+      if (!response.ok || !cuerpo?.ok) {
+        setRelectura({
+          fase: 'fallo',
+          motivo: cuerpo?.motivo ?? t`No se pudo leer el documento.`,
+        });
+
+        return;
+      }
+
+      // Leer y que salga lo mismo es el caso normal, no un fallo: se dice y no
+      // se abre un diálogo para no hacer confirmar una lista vacía.
+      if (cuerpo.sinCambios || !cuerpo.propuestaId || !cuerpo.cambios?.length) {
+        setRelectura({
+          fase: 'hecho',
+          mensaje: t`La nueva lectura dice lo mismo. No cambia nada.`,
+        });
 
         return;
       }
 
       setRelectura({
-        fase: 'fallo',
-        motivo: cuerpo?.motivo ?? t`No se pudo leer el documento.`,
+        fase: 'confirmando',
+        propuestaId: cuerpo.propuestaId,
+        cambios: cuerpo.cambios,
       });
+    } catch {
+      setRelectura({
+        fase: 'fallo',
+        motivo: t`No se pudo contactar con el servidor.`,
+      });
+    }
+  };
+
+  // Guarda EXACTAMENTE lo que se enseñó: se manda el id de la propuesta, no se
+  // vuelve a leer el documento.
+  const aplicar = async () => {
+    const token = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
+
+    if (!token || relectura.fase !== 'confirmando') return;
+
+    const { propuestaId, cambios } = relectura;
+
+    setRelectura({ fase: 'aplicando', propuestaId, cambios });
+
+    try {
+      const response = await fetch(
+        `${REACT_APP_SERVER_BASE_URL}/documento/aplicar-relectura`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({ propuestaId }),
+        },
+      );
+
+      const cuerpo = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        aplicados?: number;
+        motivo?: string;
+      } | null;
+
+      if (!response.ok || !cuerpo?.ok) {
+        setRelectura({
+          fase: 'fallo',
+          motivo: cuerpo?.motivo ?? t`No se pudieron aplicar los cambios.`,
+        });
+
+        return;
+      }
+
+      setRelectura({
+        fase: 'hecho',
+        mensaje:
+          cambios.length === 1
+            ? t`Cambiado 1 dato.`
+            : t`Cambiados ${cambios.length} datos.`,
+      });
+      setVersion((anterior) => anterior + 1);
     } catch {
       setRelectura({
         fase: 'fallo',
@@ -250,14 +330,18 @@ export const DocumentoViewer = ({ objeto }: DocumentoViewerProps) => {
           </>
         )}
         {relectura.fase === 'hecho' && (
-          <StyledStatus>{t`Documento releído. Los datos están actualizados.`}</StyledStatus>
+          <StyledStatus>{relectura.mensaje}</StyledStatus>
         )}
         {relectura.fase === 'fallo' && (
           <StyledError>{relectura.motivo}</StyledError>
         )}
         <StyledButton
           onClick={releer}
-          disabled={relectura.fase === 'leyendo' || !recordId}
+          disabled={
+            relectura.fase === 'leyendo' ||
+            relectura.fase === 'aplicando' ||
+            !recordId
+          }
         >
           {t`Volver a leer`}
         </StyledButton>
@@ -266,6 +350,14 @@ export const DocumentoViewer = ({ objeto }: DocumentoViewerProps) => {
         <StyledFrame src={objectUrl} title={t`Documento`} allow="fullscreen" />
       ) : (
         <StyledMessage>{t`Cargando documento…`}</StyledMessage>
+      )}
+      {(relectura.fase === 'confirmando' || relectura.fase === 'aplicando') && (
+        <CambiosDeRelectura
+          cambios={relectura.cambios}
+          aplicando={relectura.fase === 'aplicando'}
+          alConfirmar={aplicar}
+          alCancelar={() => setRelectura({ fase: 'inactivo' })}
+        />
       )}
     </StyledContainer>
   );

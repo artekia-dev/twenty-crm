@@ -26,6 +26,23 @@ import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspac
 
 type Objeto = 'factura' | 'albaran';
 
+export type CambioPropuesto = {
+  campo: string;
+  etiqueta: string;
+  antes: unknown;
+  despues: unknown;
+};
+
+export type PropuestaRelectura =
+  | {
+      ok: true;
+      propuestaId?: string;
+      cambios: CambioPropuesto[];
+      sinCambios: boolean;
+      aplicados?: number;
+    }
+  | { ok: false; motivo: string };
+
 const CAMPO_DOCUMENTO = 'sharepointItemId';
 
 @Injectable()
@@ -106,6 +123,93 @@ export class DocumentoService {
     if (typeof itemId !== 'string' || itemId.length === 0) return null;
 
     return { itemId, fileName: registro?.fileName ?? 'documento.pdf' };
+  }
+
+  // Asks the watcher what a reread WOULD change, without changing anything.
+  //
+  // The answer carries a proposal id. Confirming sends that id back so the
+  // watcher writes the very changes that were shown: reading again on confirm
+  // would give a different result — the model is not deterministic — and fields
+  // nobody saw would be written.
+  async proponerRelectura({
+    authContext,
+    objeto,
+    recordId,
+  }: {
+    authContext: UserWorkspaceAuthContext;
+    objeto: Objeto;
+    recordId: string;
+  }): Promise<PropuestaRelectura> {
+    const documento = await this.itemIdDe({ authContext, objeto, recordId });
+
+    if (!documento) return { ok: false, motivo: 'Este registro no tiene documento.' };
+
+    return this.pedirAlWatcher('/proponer', { itemId: documento.itemId });
+  }
+
+  // Writes the changes that were shown, and only those.
+  async aplicarRelectura({
+    propuestaId,
+  }: {
+    propuestaId: string;
+  }): Promise<{ ok: true; aplicados: number } | { ok: false; motivo: string }> {
+    const respuesta = await this.pedirAlWatcher('/aplicar', { propuestaId });
+
+    if (!respuesta.ok) return respuesta;
+
+    return { ok: true, aplicados: respuesta.aplicados ?? 0 };
+  }
+
+  private async pedirAlWatcher(
+    ruta: string,
+    cuerpo: Record<string, string>,
+  ): Promise<PropuestaRelectura> {
+    const url = process.env.WATCHER_URL?.replace(/\/$/, '');
+    const token = process.env.WATCHER_TOKEN;
+
+    if (!url || !token) {
+      return { ok: false, motivo: 'La relectura no está configurada en el servidor.' };
+    }
+
+    try {
+      const respuesta = await fetch(`${url}${ruta}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-watcher-token': token },
+        body: JSON.stringify(cuerpo),
+        signal: AbortSignal.timeout(120_000),
+      });
+
+      const datos = (await respuesta.json().catch(() => ({}))) as Record<string, unknown>;
+
+      if (!respuesta.ok) {
+        // 409 es la propuesta caducada, y ese caso tiene arreglo conocido:
+        // volver a leer. Decirlo evita que alguien pulse dos veces sin saber.
+        const motivo =
+          typeof datos.error === 'string'
+            ? datos.error
+            : 'El documento no se pudo leer. Inténtalo de nuevo.';
+
+        this.logger.error(`Watcher ${ruta} answered ${respuesta.status}: ${motivo}`);
+
+        return { ok: false, motivo };
+      }
+
+      return {
+        ok: true,
+        propuestaId: typeof datos.propuestaId === 'string' ? datos.propuestaId : undefined,
+        cambios: Array.isArray(datos.cambios) ? (datos.cambios as CambioPropuesto[]) : [],
+        sinCambios: datos.sinCambios === true,
+        aplicados: typeof datos.aplicados === 'number' ? datos.aplicados : undefined,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Watcher ${ruta} unreachable: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+
+      return { ok: false, motivo: 'El servicio de lectura no responde.' };
+    }
   }
 
   // Asks the watcher to read this document again, and waits for it.

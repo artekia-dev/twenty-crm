@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   Logger,
@@ -15,9 +16,13 @@ import { pipeline } from 'node:stream/promises';
 import { type Request, type Response } from 'express';
 
 import { buildUserAuthContext } from 'src/engine/core-modules/auth/utils/build-user-auth-context.util';
+import { type UserWorkspaceAuthContext } from 'src/engine/guards/workspace-auth.guard';
 import { JwtAuthGuard } from 'src/engine/guards/jwt-auth.guard';
 import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
-import { DocumentoService } from 'src/modules/documento/services/documento.service';
+import {
+  DocumentoService,
+  type PropuestaRelectura,
+} from 'src/modules/documento/services/documento.service';
 
 // Serves the PDF of an invoice or delivery note straight to the browser.
 //
@@ -96,6 +101,81 @@ export class DocumentoController {
     response.setHeader('Cache-Control', 'private, no-store');
 
     await pipeline(documento.stream, response);
+  }
+
+  // What a reread would change, without changing it.
+  @Post(':objeto/:recordId/proponer-relectura')
+  async proponerRelectura(
+    @Param('objeto') objeto: string,
+    @Param('recordId') recordId: string,
+    @Req() request: Request,
+  ): Promise<PropuestaRelectura> {
+    const authContext = this.contextoDe(objeto, request);
+
+    return this.documentoService
+      .proponerRelectura({ authContext, objeto: objeto as 'factura' | 'albaran', recordId })
+      .catch((error: unknown) => {
+        this.logger.error(
+          `Proposing a reread of ${objeto} ${recordId} failed: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+
+        return { ok: false as const, motivo: 'No se pudo leer el documento.' };
+      });
+  }
+
+  // Applies the changes that were shown, and only those.
+  @Post('aplicar-relectura')
+  async aplicarRelectura(
+    @Body() cuerpo: { propuestaId?: string },
+    @Req() request: Request,
+  ): Promise<{ ok: boolean; aplicados?: number; motivo?: string }> {
+    // Se valida la sesión igual que en el resto: el id de propuesta no es un
+    // permiso, solo dice QUÉ escribir.
+    this.contextoDe('factura', request);
+
+    if (!cuerpo?.propuestaId) {
+      return { ok: false, motivo: 'Falta la propuesta.' };
+    }
+
+    return this.documentoService
+      .aplicarRelectura({ propuestaId: cuerpo.propuestaId })
+      .catch((error: unknown) => {
+        this.logger.error(
+          `Applying a reread failed: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+
+        return { ok: false as const, motivo: 'No se pudieron aplicar los cambios.' };
+      });
+  }
+
+  // La misma comprobación de sesión que hacían las rutas de una en una.
+  private contextoDe(objeto: string, request: Request): UserWorkspaceAuthContext {
+    if (objeto !== 'factura' && objeto !== 'albaran') {
+      throw new NotFoundException('Only invoices and delivery notes have documents.');
+    }
+
+    if (
+      !request.workspace ||
+      !request.user ||
+      !request.workspaceMember ||
+      !request.workspaceMemberId ||
+      !request.userWorkspaceId
+    ) {
+      throw new NotFoundException();
+    }
+
+    return buildUserAuthContext({
+      workspace: request.workspace,
+      userWorkspaceId: request.userWorkspaceId,
+      user: request.user,
+      workspaceMemberId: request.workspaceMemberId,
+      workspaceMember: request.workspaceMember,
+      companyScope: request.companyScope,
+    });
   }
 
   // Reads the document again, now, and answers with the outcome.
