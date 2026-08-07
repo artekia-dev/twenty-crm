@@ -28,6 +28,7 @@ export type FacturaPanel = {
   avisoSociedad: string | null;
   avisoTipo: string | null;
   contraparte: string | null;
+  cifEmisor: string | null;
   sociedadId: string | null;
   base: { amountMicros: number | null } | null;
   iva: { amountMicros: number | null } | null;
@@ -45,6 +46,7 @@ const CAMPOS = {
   avisoSociedad: true,
   avisoTipo: true,
   contraparte: true,
+  cifEmisor: true,
   sociedadId: true,
   base: true,
   iva: true,

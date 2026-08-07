@@ -21,6 +21,7 @@ const factura = (over: Partial<FacturaPanel> = {}): FacturaPanel => ({
   avisoSociedad: null,
   avisoTipo: null,
   contraparte: 'Proveedor SL',
+  cifEmisor: 'B12345678',
   sociedadId: 'soc-1',
   base: { amountMicros: 100_000_000 },
   iva: { amountMicros: 21_000_000 },
@@ -33,7 +34,7 @@ describe('calcularResumen', () => {
     const r = calcularResumen([
       factura({ direccion: 'COMPRA' }),
       factura({ direccion: 'VENTA', base: { amountMicros: 250_000_000 } }),
-    ]);
+    ], false);
 
     expect(r.compras).toBe(100);
     expect(r.ventas).toBe(250);
@@ -45,7 +46,7 @@ describe('calcularResumen', () => {
   it('usa el total cuando no hay base', () => {
     const r = calcularResumen([
       factura({ base: { amountMicros: 0 }, total: { amountMicros: 121_000_000 } }),
-    ]);
+    ], false);
 
     expect(r.compras).toBe(121);
   });
@@ -55,10 +56,12 @@ describe('calcularResumen', () => {
       factura({ contabilizada: false }),
       factura({ contabilizada: null }),
       factura({ contabilizada: true }),
-    ]);
+    ], false);
 
     expect(r.pendientesDeContabilizar).toBe(2);
-    expect(r.importePendiente).toBe(242);
+    // Sin IVA: la base de las dos. El importe sigue la magnitud elegida en el
+    // panel, no una fija, o la cifra no cuadraria con las de al lado.
+    expect(r.importePendiente).toBe(200);
   });
 
   // "Cuanto debemos" son las compras sin pagar. Una venta sin cobrar es otra
@@ -67,10 +70,10 @@ describe('calcularResumen', () => {
     const r = calcularResumen([
       factura({ direccion: 'COMPRA', pagada: false }),
       factura({ direccion: 'VENTA', pagada: false }),
-    ]);
+    ], false);
 
     expect(r.pendientesDePago).toBe(1);
-    expect(r.importePendienteDePago).toBe(121);
+    expect(r.importePendienteDePago).toBe(100);
   });
 
   it('cuenta avisos, huerfanas y sin direccion', () => {
@@ -80,15 +83,35 @@ describe('calcularResumen', () => {
       factura({ sociedadId: null }),
       factura({ direccion: 'DESCONOCIDA' }),
       factura({ direccion: null }),
-    ]);
+    ], false);
 
     expect(r.conAviso).toBe(2);
     expect(r.sinSociedad).toBe(1);
     expect(r.sinDireccion).toBe(2);
   });
 
+  // El interruptor del panel: la base es lo que se compara entre periodos y va
+  // al modelo de IVA; el total es lo que sale de la cuenta.
+  it('con IVA suma el total, sin IVA la base', () => {
+    const unas = [factura({ direccion: 'COMPRA', pagada: false, contabilizada: false })];
+
+    expect(calcularResumen(unas, false).compras).toBe(100);
+    expect(calcularResumen(unas, true).compras).toBe(121);
+    expect(calcularResumen(unas, true).importePendiente).toBe(121);
+    expect(calcularResumen(unas, true).importePendienteDePago).toBe(121);
+  });
+
+  it('si falta el importe de la magnitud pedida, usa el otro', () => {
+    // Media cifra es mejor que un cero, que ademas se lee como "no hay nada".
+    const sinTotal = [factura({ total: { amountMicros: 0 } })];
+    const sinBase = [factura({ base: { amountMicros: 0 } })];
+
+    expect(calcularResumen(sinTotal, true).compras).toBe(121);
+    expect(calcularResumen(sinBase, false).compras).toBe(121);
+  });
+
   it('sin facturas devuelve ceros y no revienta', () => {
-    const r = calcularResumen([]);
+    const r = calcularResumen([], false);
 
     expect(r.compras).toBe(0);
     expect(r.numeroFacturas).toBe(0);
@@ -101,6 +124,7 @@ describe('calcularSerieMensual', () => {
       [factura({ fechaEmision: '2026-01-10T00:00:00.000Z' })],
       new Date(2026, 0, 1),
       new Date(2026, 2, 31),
+      false,
     );
 
     expect(serie.map((p) => p.mes)).toEqual(['2026-01', '2026-02', '2026-03']);
@@ -116,6 +140,7 @@ describe('calcularSerieMensual', () => {
       ],
       new Date(2026, 0, 1),
       new Date(2026, 1, 28),
+      false,
     );
 
     expect(serie[0]).toMatchObject({ mes: '2026-01', compras: 100, ventas: 100 });
@@ -127,6 +152,7 @@ describe('calcularSerieMensual', () => {
       [factura({ fechaEmision: null }), factura({ fechaEmision: 'vaya fecha' })],
       new Date(2026, 0, 1),
       new Date(2026, 0, 31),
+      false,
     );
 
     expect(serie[0]?.compras).toBe(0);
@@ -144,14 +170,14 @@ describe('agruparPor', () => {
     f.contraparte ? { id: f.contraparte, nombre: f.contraparte } : null;
 
   it('ordena por importe de mayor a menor', () => {
-    const filas = agruparPor(conProveedor, porContraparte, 'importe');
+    const filas = agruparPor(conProveedor, porContraparte, 'importe', false);
 
     expect(filas.map((f) => f.nombre)).toEqual(['Nubbitel', 'Gespurin']);
     expect(filas[0]?.importe).toBe(300);
   });
 
   it('ordena por numero de documentos', () => {
-    const filas = agruparPor(conProveedor, porContraparte, 'documentos');
+    const filas = agruparPor(conProveedor, porContraparte, 'documentos', false);
 
     expect(filas[0]?.nombre).toBe('Gespurin');
     expect(filas[0]?.documentos).toBe(2);
@@ -162,13 +188,27 @@ describe('agruparPor', () => {
       [factura({ contraparte: 'Ñandú SL' }), factura({ contraparte: 'Naviera SA' })],
       porContraparte,
       'nombre',
+      false,
     );
 
     expect(filas.map((f) => f.nombre)).toEqual(['Naviera SA', 'Ñandú SL']);
   });
 
+  it('agrupa por la magnitud elegida', () => {
+    const coherentes = [
+      factura({
+        contraparte: 'Nubbitel',
+        base: { amountMicros: 300_000_000 },
+        total: { amountMicros: 363_000_000 },
+      }),
+    ];
+
+    expect(agruparPor(coherentes, porContraparte, 'importe', false)[0]?.importe).toBe(300);
+    expect(agruparPor(coherentes, porContraparte, 'importe', true)[0]?.importe).toBe(363);
+  });
+
   it('deja fuera lo que no tiene clave, en vez de agrupar bajo vacio', () => {
-    const filas = agruparPor([factura({ contraparte: null })], porContraparte, 'importe');
+    const filas = agruparPor([factura({ contraparte: null })], porContraparte, 'importe', false);
 
     expect(filas).toEqual([]);
   });

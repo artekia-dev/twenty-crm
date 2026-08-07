@@ -80,6 +80,15 @@ const StyledCifras = styled.div`
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 `;
 
+// El interruptor de IVA gobierna TODOS los importes del panel, asi que va
+// suelto encima de las cifras y no dentro de una tarjeta: dentro pareceria que
+// solo afecta a esa.
+const StyledBarraIva = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: -${themeCssVariables.spacing[2]};
+`;
+
 const StyledGraficos = styled.div`
   display: flex;
   flex-direction: column;
@@ -115,6 +124,11 @@ const DIRECCIONES = [
   { valor: 'ventas' as const, etiqueta: 'Ventas' },
 ];
 
+const IVA = [
+  { valor: 'sin' as const, etiqueta: 'Sin IVA', etiquetaCorta: 'Base' },
+  { valor: 'con' as const, etiqueta: 'Con IVA', etiquetaCorta: 'Total' },
+];
+
 const ORDENES: { valor: OrdenRanking; etiqueta: string; etiquetaCorta: string }[] = [
   { valor: 'importe', etiqueta: 'Por importe', etiquetaCorta: '€' },
   { valor: 'documentos', etiqueta: 'Por nº de facturas', etiquetaCorta: 'Nº' },
@@ -125,24 +139,38 @@ export const PanelHolding = () => {
   const [periodo, setPeriodo] = useState<Periodo>('12m');
   const [direccion, setDireccion] = useState<'ambas' | 'compras' | 'ventas'>('ambas');
   const [orden, setOrden] = useState<OrdenRanking>('importe');
+  // Por defecto sin IVA: la base imponible es lo que se compara entre periodos
+  // y lo que va al modelo trimestral.
+  const [iva, setIva] = useState<'sin' | 'con'>('sin');
+
+  const conIva = iva === 'con';
 
   const { facturas, cargando, error, desde } = usePanelFacturas(periodo);
 
-  const resumen = useMemo(() => calcularResumen(facturas), [facturas]);
+  const resumen = useMemo(() => calcularResumen(facturas, conIva), [facturas, conIva]);
 
   const serie = useMemo(
-    () => calcularSerieMensual(facturas, desde, new Date()),
-    [facturas, desde],
+    () => calcularSerieMensual(facturas, desde, new Date(), conIva),
+    [facturas, desde, conIva],
   );
 
   const proveedores = useMemo(
     () =>
       agruparPor(
         facturas.filter((f) => f.direccion === 'COMPRA'),
-        (f) => (f.contraparte ? { id: f.contraparte, nombre: f.contraparte } : null),
+        // El nombre si se leyo del documento; si no, el CIF. Un CIF dice poco,
+        // pero una tarjeta vacia no dice nada y ademas parece que el panel
+        // esta roto: los datos estan ahi, solo que sin nombre todavia.
+        (f) =>
+          f.contraparte
+            ? { id: f.contraparte, nombre: f.contraparte }
+            : f.cifEmisor
+              ? { id: f.cifEmisor, nombre: f.cifEmisor }
+              : null,
         orden,
+        conIva,
       ).slice(0, 8),
-    [facturas, orden],
+    [facturas, orden, conIva],
   );
 
   const totalProveedores = proveedores.reduce((suma, p) => suma + p.importe, 0);
@@ -195,36 +223,45 @@ export const PanelHolding = () => {
         />
       </StyledCabecera>
 
+      <StyledBarraIva>
+        <GrupoBotones
+          opciones={IVA}
+          seleccion={iva}
+          alCambiar={setIva}
+          etiquetaAccesible="Importes con o sin IVA"
+        />
+      </StyledBarraIva>
+
       <StyledCifras>
         <TarjetaKpi
           titulo="Compras"
           valor={formatearEuros(resumen.compras)}
-          detalle="Base imponible del periodo"
+          detalle={`${conIva ? 'Total con IVA' : 'Base imponible'} del periodo`}
           color="compras"
         />
         <TarjetaKpi
           titulo="Ventas"
           valor={formatearEuros(resumen.ventas)}
-          detalle="Base imponible del periodo"
+          detalle={`${conIva ? 'Total con IVA' : 'Base imponible'} del periodo`}
           color="ventas"
         />
         <TarjetaKpi
           titulo="Sin contabilizar"
           valor={formatearEuros(resumen.importePendiente)}
-          detalle={`${formatearEntero(resumen.pendientesDeContabilizar)} facturas · IVA incluido`}
+          detalle={`${formatearEntero(resumen.pendientesDeContabilizar)} facturas`}
           color="pendiente"
         />
         <TarjetaKpi
           titulo="Pendiente de pago"
           valor={formatearEuros(resumen.importePendienteDePago)}
-          detalle={`${formatearEntero(resumen.pendientesDePago)} compras · IVA incluido`}
+          detalle={`${formatearEntero(resumen.pendientesDePago)} compras sin pagar`}
         />
       </StyledCifras>
 
       <StyledGraficos>
         <TarjetaGrafico
           titulo="Compras y ventas por mes"
-          descripcion="Base imponible. Toca un mes para ver el detalle."
+          descripcion={`${conIva ? 'Total con IVA' : 'Base imponible'}. Toca un mes para ver el detalle.`}
           controles={
             <GrupoBotones
               opciones={DIRECCIONES}

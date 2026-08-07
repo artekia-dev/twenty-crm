@@ -28,14 +28,28 @@ export type PuntoMes = {
 const esCompra = (f: FacturaPanel) => f.direccion === 'COMPRA';
 const esVenta = (f: FacturaPanel) => f.direccion === 'VENTA';
 
-/** La base imponible, que es lo que se compara entre periodos. Sin ella, el total. */
-export const importeDe = (f: FacturaPanel): number => {
+/**
+ * El importe de una factura, con o sin IVA.
+ *
+ * Son dos preguntas distintas y las dos se hacen a diario: la base imponible es
+ * lo que se compara entre periodos y lo que va al modelo de IVA; el total es lo
+ * que de verdad sale o entra de la cuenta. Mezclarlas en la misma pantalla hace
+ * que las cifras parezcan contradecirse, asi que el panel entero se mira en una
+ * u otra magnitud, nunca en las dos a la vez.
+ *
+ * Si el importe que toca no esta, se usa el otro: media cifra es mejor que un
+ * cero, que ademas se confunde con "no hay nada".
+ */
+export const importeDe = (f: FacturaPanel, conIva: boolean): number => {
   const base = euros(f.base);
+  const total = euros(f.total);
 
-  return base > 0 ? base : euros(f.total);
+  if (conIva) return total > 0 ? total : base + euros(f.iva);
+
+  return base > 0 ? base : total;
 };
 
-export const calcularResumen = (facturas: FacturaPanel[]): Resumen => {
+export const calcularResumen = (facturas: FacturaPanel[], conIva: boolean): Resumen => {
   const resumen: Resumen = {
     compras: 0,
     ventas: 0,
@@ -50,21 +64,21 @@ export const calcularResumen = (facturas: FacturaPanel[]): Resumen => {
   };
 
   for (const factura of facturas) {
-    const importe = importeDe(factura);
+    const importe = importeDe(factura, conIva);
 
     if (esCompra(factura)) resumen.compras += importe;
     if (esVenta(factura)) resumen.ventas += importe;
 
     if (factura.contabilizada !== true) {
       resumen.pendientesDeContabilizar += 1;
-      resumen.importePendiente += euros(factura.total);
+      resumen.importePendiente += importeDe(factura, conIva);
     }
 
     // Solo las compras: una venta sin pagar es un cobro pendiente y se mira en
     // otro sitio. Aqui se responde "cuanto debemos".
     if (esCompra(factura) && factura.pagada !== true) {
       resumen.pendientesDePago += 1;
-      resumen.importePendienteDePago += euros(factura.total);
+      resumen.importePendienteDePago += importeDe(factura, conIva);
     }
 
     if (factura.avisoSociedad !== null || factura.avisoTipo !== null) {
@@ -91,6 +105,7 @@ export const calcularSerieMensual = (
   facturas: FacturaPanel[],
   desde: Date,
   hasta: Date,
+  conIva: boolean,
 ): PuntoMes[] => {
   const porMes = new Map<string, PuntoMes>();
 
@@ -115,7 +130,7 @@ export const calcularSerieMensual = (
 
     if (!punto) continue;
 
-    const importe = importeDe(factura);
+    const importe = importeDe(factura, conIva);
 
     if (esCompra(factura)) punto.compras += importe;
     if (esVenta(factura)) punto.ventas += importe;
@@ -138,6 +153,7 @@ export const agruparPor = (
   facturas: FacturaPanel[],
   clave: (f: FacturaPanel) => { id: string; nombre: string } | null,
   orden: OrdenRanking,
+  conIva: boolean,
 ): FilaAgrupada[] => {
   const grupos = new Map<string, FilaAgrupada>();
 
@@ -153,7 +169,7 @@ export const agruparPor = (
       documentos: 0,
     };
 
-    grupo.importe += importeDe(factura);
+    grupo.importe += importeDe(factura, conIva);
     grupo.documentos += 1;
     grupos.set(k.id, grupo);
   }
