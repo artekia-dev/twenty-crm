@@ -4,6 +4,7 @@ import { type NavigationMenuItem } from '~/generated-metadata/graphql';
 import { filterAndSortNavigationMenuItems } from '@/navigation-menu-item/common/utils/filterAndSortNavigationMenuItems';
 import { isNavigationMenuItemFolder } from '@/navigation-menu-item/common/utils/isNavigationMenuItemFolder';
 import { objectMetadataItemsSelector } from '@/object-metadata/states/objectMetadataItemsSelector';
+import { usePermisosDelMenu } from '@/navigation-menu-item/common/hooks/usePermisosDelMenu';
 import { viewsSelector } from '@/views/states/selectors/viewsSelector';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 
@@ -25,6 +26,7 @@ type NavigationMenuItemFolderEntry = Pick<
 export const useNavigationMenuItemsByFolder = () => {
   const views = useAtomStateValue(viewsSelector);
   const objectMetadataItems = useAtomStateValue(objectMetadataItemsSelector);
+  const permisos = usePermisosDelMenu();
 
   const { navigationMenuItems, workspaceNavigationMenuItems } =
     useNavigationMenuItemsData();
@@ -87,6 +89,7 @@ export const useNavigationMenuItemsByFolder = () => {
         itemsInFolder,
         views,
         objectMetadataItems,
+        permisos,
       );
 
       acc.push({

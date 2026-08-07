@@ -94,20 +94,28 @@ const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
           label: t`Accounts`,
           path: SettingsPath.Accounts,
           Icon: IconAt,
-          isHidden: !permissionMap[PermissionFlagType.CONNECTED_ACCOUNTS],
+          // Conectar un buzon o un calendario es montar el sistema, no usarlo:
+          // se suma la condicion de administrador a la que ya habia.
+          isHidden:
+            !permissionMap[PermissionFlagType.CONNECTED_ACCOUNTS] ||
+            !permissionMap[PermissionFlagType.WORKSPACE],
           subItems: [
             {
               label: t`Emails`,
               path: SettingsPath.AccountsEmails,
               Icon: IconMail,
-              isHidden: !permissionMap[PermissionFlagType.CONNECTED_ACCOUNTS],
+              isHidden:
+                !permissionMap[PermissionFlagType.CONNECTED_ACCOUNTS] ||
+                !permissionMap[PermissionFlagType.WORKSPACE],
               indentationLevel: 2,
             },
             {
               label: t`Calendars`,
               path: SettingsPath.AccountsCalendars,
               Icon: IconCalendarEvent,
-              isHidden: !permissionMap[PermissionFlagType.CONNECTED_ACCOUNTS],
+              isHidden:
+                !permissionMap[PermissionFlagType.CONNECTED_ACCOUNTS] ||
+                !permissionMap[PermissionFlagType.WORKSPACE],
               indentationLevel: 2,
             },
           ],
@@ -212,6 +220,9 @@ const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
               '_blank',
             ),
           Icon: IconHelpCircle,
+          // Es la documentacion de Twenty, no la de este sistema: a quien solo
+          // valida facturas le manda a un manual de otra cosa.
+          isHidden: !permissionMap[PermissionFlagType.WORKSPACE],
         },
         {
           label: t`Logout`,
