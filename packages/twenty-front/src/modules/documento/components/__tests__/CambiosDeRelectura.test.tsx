@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 
 import { CambiosDeRelectura } from '@/documento/components/CambiosDeRelectura';
 
@@ -18,6 +18,7 @@ describe('CambiosDeRelectura', () => {
         {...props}
         cambios={[
           {
+            id: '0:total',
             campo: 'total',
             etiqueta: 'Total',
             antes: { amountMicros: 275_400_000 },
@@ -50,6 +51,7 @@ describe('CambiosDeRelectura', () => {
         {...props}
         cambios={[
           {
+            id: '0:fechaEmision',
             campo: 'fechaEmision',
             etiqueta: 'Fecha de la factura',
             antes: null,
@@ -68,7 +70,7 @@ describe('CambiosDeRelectura', () => {
     const { rerender } = render(
       <CambiosDeRelectura
         {...props}
-        cambios={[{ campo: 'total', etiqueta: 'Total', antes: 1, despues: 2 }]}
+        cambios={[{ id: '0:total', campo: 'total', etiqueta: 'Total', antes: 1, despues: 2 }]}
       />,
     );
 
@@ -78,8 +80,8 @@ describe('CambiosDeRelectura', () => {
       <CambiosDeRelectura
         {...props}
         cambios={[
-          { campo: 'total', etiqueta: 'Total', antes: 1, despues: 2 },
-          { campo: 'base', etiqueta: 'Base imponible', antes: 3, despues: 4 },
+          { id: '0:total', campo: 'total', etiqueta: 'Total', antes: 1, despues: 2 },
+          { id: '0:base', campo: 'base', etiqueta: 'Base imponible', antes: 3, despues: 4 },
         ]}
       />,
     );
@@ -92,7 +94,7 @@ describe('CambiosDeRelectura', () => {
       <CambiosDeRelectura
         {...props}
         aplicando
-        cambios={[{ campo: 'total', etiqueta: 'Total', antes: 1, despues: 2 }]}
+        cambios={[{ id: '0:total', campo: 'total', etiqueta: 'Total', antes: 1, despues: 2 }]}
       />,
     );
 
@@ -105,6 +107,7 @@ describe('CambiosDeRelectura', () => {
 describe('con muchos cambios', () => {
   const muchos = Array.from({ length: 25 }, (_, i) => ({
     campo: `campo${i}`,
+    id: `0:campo${i}`,
     etiqueta: `Campo ${i}`,
     antes: `viejo ${i}`,
     despues: `nuevo ${i}`,
@@ -141,4 +144,129 @@ describe('con muchos cambios', () => {
     expect(container).toBeEmptyDOMElement();
     expect(document.body.querySelector('[role="dialog"]')).not.toBeNull();
   });
+});
+
+// Poder quedarse con unos cambios y rechazar otros: aceptar el importe nuevo
+// pero no el CIF, por ejemplo. Lo que se manda son los campos elegidos; los
+// valores salen siempre de la propuesta que ya se calculó.
+describe('elegir qué se cambia', () => {
+  const dos = [
+    { id: '0:base', campo: 'base', etiqueta: 'Base imponible', antes: 1, despues: 2 },
+    { id: '0:cifEmisor', campo: 'cifEmisor', etiqueta: 'CIF de quien emite', antes: 'A', despues: 'B' },
+  ];
+
+  it('todo viene marcado y se confirman los dos', () => {
+    const alConfirmar = jest.fn();
+
+    render(
+      <CambiosDeRelectura
+        cambios={dos}
+        aplicando={false}
+        alConfirmar={alConfirmar}
+        alCancelar={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Aplicar/ }));
+
+    expect(alConfirmar).toHaveBeenCalledWith(['0:base', '0:cifEmisor']);
+  });
+
+  it('desmarcar el CIF lo deja fuera', () => {
+    const alConfirmar = jest.fn();
+
+    render(
+      <CambiosDeRelectura
+        cambios={dos}
+        aplicando={false}
+        alConfirmar={alConfirmar}
+        alCancelar={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getAllByRole('checkbox')[1]);
+    fireEvent.click(screen.getByRole('button', { name: /Aplicar/ }));
+
+    expect(alConfirmar).toHaveBeenCalledWith(['0:base']);
+  });
+
+  it('sin nada marcado no se puede aplicar', () => {
+    render(
+      <CambiosDeRelectura
+        cambios={dos}
+        aplicando={false}
+        alConfirmar={jest.fn()}
+        alCancelar={jest.fn()}
+      />,
+    );
+
+    screen.getAllByRole('checkbox').forEach((casilla) => fireEvent.click(casilla));
+
+    expect(screen.getByText(/no se cambiará nada/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Aplicar/ })).toBeDisabled();
+  });
+
+  it('un cambio que llega despues nace elegido', () => {
+    const alConfirmar = jest.fn();
+    const { rerender } = render(
+      <CambiosDeRelectura
+        cambios={[dos[0]]}
+        aplicando={false}
+        alConfirmar={alConfirmar}
+        alCancelar={jest.fn()}
+      />,
+    );
+
+    rerender(
+      <CambiosDeRelectura
+        cambios={dos}
+        aplicando={false}
+        alConfirmar={alConfirmar}
+        alCancelar={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Aplicar/ }));
+
+    expect(alConfirmar).toHaveBeenCalledWith(['0:base', '0:cifEmisor']);
+  });
+
+  it('el contador sigue a lo elegido, no a lo propuesto', () => {
+    render(
+      <CambiosDeRelectura
+        cambios={dos}
+        aplicando={false}
+        alConfirmar={jest.fn()}
+        alCancelar={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getAllByRole('checkbox')[0]);
+
+    expect(screen.getByText(/1 dato\. Nada más\./)).toBeInTheDocument();
+  });
+});
+
+// Un PDF con dos facturas produce dos documentos, y los dos pueden cambiar el
+// proveedor. Si la eleccion fuera por nombre de campo, desmarcar uno desmarcaria
+// el otro y se guardaria algo que nadie aprobo.
+it('desmarcar un campo no toca el mismo campo de otro documento', () => {
+  const alConfirmar = jest.fn();
+
+  render(
+    <CambiosDeRelectura
+      cambios={[
+        { id: '0:total', campo: 'total', etiqueta: 'Total', antes: 1, despues: 2 },
+        { id: '1:total', campo: 'total', etiqueta: 'Total', antes: 3, despues: 4 },
+      ]}
+      aplicando={false}
+      alConfirmar={alConfirmar}
+      alCancelar={jest.fn()}
+    />,
+  );
+
+  fireEvent.click(screen.getAllByRole('checkbox')[0]);
+  fireEvent.click(screen.getByRole('button', { name: /Aplicar/ }));
+
+  expect(alConfirmar).toHaveBeenCalledWith(['1:total']);
 });

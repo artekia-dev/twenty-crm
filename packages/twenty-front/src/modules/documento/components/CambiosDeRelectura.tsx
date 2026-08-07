@@ -1,6 +1,7 @@
 import { css } from '@linaria/core';
 import { styled } from '@linaria/react';
 import { t } from '@lingui/core/macro';
+import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
@@ -13,6 +14,9 @@ import { themeCssVariables } from 'twenty-ui/theme-constants';
 // es peor que no tenerla, porque se deja de leer.
 
 export type CambioPropuesto = {
+  /** Identifica el cambio dentro de la propuesta: `documento:campo`. Dos
+   *  facturas del mismo PDF pueden cambiar el mismo campo. */
+  id: string;
   campo: string;
   etiqueta: string;
   antes: unknown;
@@ -23,7 +27,8 @@ type CambiosDeRelecturaProps = {
   cambios: CambioPropuesto[];
   aplicando: boolean;
   error?: string;
-  alConfirmar: () => void;
+  /** Recibe los identificadores elegidos: se guardan esos y solo esos. */
+  alConfirmar: (elegidos: string[]) => void;
   alCancelar: () => void;
 };
 
@@ -84,15 +89,37 @@ const StyledLista = styled.div`
   padding: ${themeCssVariables.spacing[2]} 0;
 `;
 
-const StyledFila = styled.div`
+// La fila entera es la etiqueta de su casilla: acertar a un cuadrito de 14px
+// con el raton es innecesariamente dificil, y en un movil imposible.
+const StyledFila = styled.label`
+  align-items: flex-start;
+  cursor: pointer;
   display: flex;
-  flex-direction: column;
-  gap: ${themeCssVariables.spacing[1]};
+  gap: ${themeCssVariables.spacing[3]};
   padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[4]};
+
+  &:hover {
+    background: ${themeCssVariables.background.transparent.lighter};
+  }
 
   & + & {
     border-top: 1px solid ${themeCssVariables.border.color.light};
   }
+`;
+
+const StyledCasilla = styled.input`
+  cursor: pointer;
+  margin-top: 3px;
+`;
+
+// Lo que se descarta se atenua entero: de un vistazo se ve que esa linea no va
+// a pasar, sin tener que mirar casilla por casilla.
+const StyledContenidoFila = styled.div<{ elegido: boolean }>`
+  display: flex;
+  flex-direction: column;
+  gap: ${themeCssVariables.spacing[1]};
+  min-width: 0;
+  opacity: ${({ elegido }) => (elegido ? 1 : 0.45)};
 `;
 
 const StyledCampo = styled.span`
@@ -202,31 +229,64 @@ export const CambiosDeRelectura = ({
   error,
   alConfirmar,
   alCancelar,
-}: CambiosDeRelecturaProps) =>
-  // Se monta en el body y no donde vive el componente: `position: fixed` se
-  // ancla al ancestro mas cercano con `transform` o `filter`, no al viewport,
-  // y el dialogo salia encajado dentro del visor del documento.
-  createPortal(
+}: CambiosDeRelecturaProps) => {
+  // Se guarda lo DESCARTADO, no lo elegido. Guardar lo elegido obligaria a
+  // sembrar el estado con los campos iniciales, y un cambio que llegara despues
+  // —otra relectura con el dialogo abierto— nacería sin marcar y no se
+  // guardaria sin que nadie lo notase. Al reves, todo lo que aparece cuenta
+  // como elegido mientras no lo desmarquen a mano.
+  const [descartados, setDescartados] = useState<Set<string>>(new Set());
+
+  const estaElegido = (id: string) => !descartados.has(id);
+
+  const elegidos = cambios
+    .filter((cambio) => estaElegido(cambio.id))
+    .map((cambio) => cambio.id);
+
+  const alternar = (id: string) =>
+    setDescartados((antes) => {
+      const nuevo = new Set(antes);
+
+      if (nuevo.has(id)) nuevo.delete(id);
+      else nuevo.add(id);
+
+      return nuevo;
+    });
+
+  // Se monta en el body y no donde vive el componente: position fixed se ancla
+  // al ancestro mas cercano con transform o filter, no al viewport, y el
+  // dialogo salia encajado dentro del visor del documento.
+  return createPortal(
   <StyledFondo role="dialog" aria-modal="true" onClick={alCancelar}>
     <StyledCaja onClick={(evento) => evento.stopPropagation()}>
       <StyledCabecera>
         <StyledTitulo>{t`Cambios de la nueva lectura`}</StyledTitulo>
         <StyledSubtitulo>
-          {cambios.length === 1
-            ? t`Se va a cambiar 1 dato. Nada más.`
-            : t`Se van a cambiar ${cambios.length} datos. Nada más.`}
+          {elegidos.length === 0
+            ? t`No has elegido ningún dato: no se cambiará nada.`
+            : elegidos.length === 1
+              ? t`Se va a cambiar 1 dato. Nada más.`
+              : t`Se van a cambiar ${elegidos.length} datos. Nada más.`}
         </StyledSubtitulo>
       </StyledCabecera>
 
       <StyledLista>
         {cambios.map((cambio) => (
-          <StyledFila key={cambio.campo}>
-            <StyledCampo>{cambio.etiqueta}</StyledCampo>
-            <StyledValores>
-              <StyledAntes>{comoTexto(cambio.antes)}</StyledAntes>
-              <span aria-hidden>→</span>
-              <StyledDespues>{comoTexto(cambio.despues)}</StyledDespues>
-            </StyledValores>
+          <StyledFila key={cambio.id}>
+            <StyledCasilla
+              type="checkbox"
+              checked={estaElegido(cambio.id)}
+              onChange={() => alternar(cambio.id)}
+              disabled={aplicando}
+            />
+            <StyledContenidoFila elegido={estaElegido(cambio.id)}>
+              <StyledCampo>{cambio.etiqueta}</StyledCampo>
+              <StyledValores>
+                <StyledAntes>{comoTexto(cambio.antes)}</StyledAntes>
+                <span aria-hidden>→</span>
+                <StyledDespues>{comoTexto(cambio.despues)}</StyledDespues>
+              </StyledValores>
+            </StyledContenidoFila>
           </StyledFila>
         ))}
       </StyledLista>
@@ -245,13 +305,18 @@ export const CambiosDeRelectura = ({
         <button
           type="button"
           className={`${boton} ${botonPrincipal}`}
-          onClick={alConfirmar}
-          disabled={aplicando}
+          onClick={() => alConfirmar(elegidos)}
+          disabled={aplicando || elegidos.length === 0}
         >
-          {aplicando ? t`Guardando…` : t`Aplicar estos cambios`}
+          {aplicando
+            ? t`Guardando…`
+            : elegidos.length === cambios.length
+              ? t`Aplicar estos cambios`
+              : t`Aplicar los ${elegidos.length} elegidos`}
         </button>
       </StyledPie>
     </StyledCaja>
   </StyledFondo>,
-    document.body,
-  );
+      document.body,
+    );
+};

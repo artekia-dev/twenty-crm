@@ -263,9 +263,11 @@ export const DocumentoViewer = ({ objeto }: DocumentoViewerProps) => {
     }
   };
 
-  // Guarda EXACTAMENTE lo que se enseñó: se manda el id de la propuesta, no se
-  // vuelve a leer el documento.
-  const aplicar = async () => {
+  // Guarda EXACTAMENTE lo que se eligió: se manda el id de la propuesta y los
+  // identificadores de los cambios, nunca los valores. El servidor los saca de
+  // la propuesta que ya calculó, asi que lo guardado no puede diferir de lo que
+  // se vio por mucho que se manipule la peticion.
+  const aplicar = async (elegidos: string[]) => {
     const token = tokenPair?.accessOrWorkspaceAgnosticToken?.token;
 
     if (!token || relectura.fase !== 'confirmando') return;
@@ -283,7 +285,7 @@ export const DocumentoViewer = ({ objeto }: DocumentoViewerProps) => {
             Authorization: `Bearer ${token}`,
             'content-type': 'application/json',
           },
-          body: JSON.stringify({ propuestaId }),
+          body: JSON.stringify({ propuestaId, elegidos }),
         },
       );
 
