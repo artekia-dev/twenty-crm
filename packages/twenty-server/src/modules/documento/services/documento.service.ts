@@ -150,10 +150,16 @@ export class DocumentoService {
   // Writes the changes that were shown, and only those.
   async aplicarRelectura({
     propuestaId,
+    elegidos,
   }: {
     propuestaId: string;
+    /** Los cambios elegidos, por identificador. Sin esto se aplican todos. */
+    elegidos?: string[];
   }): Promise<{ ok: true; aplicados: number } | { ok: false; motivo: string }> {
-    const respuesta = await this.pedirAlWatcher('/aplicar', { propuestaId });
+    const respuesta = await this.pedirAlWatcher('/aplicar', {
+      propuestaId,
+      elegidos,
+    });
 
     if (!respuesta.ok) return respuesta;
 
@@ -162,7 +168,7 @@ export class DocumentoService {
 
   private async pedirAlWatcher(
     ruta: string,
-    cuerpo: Record<string, string>,
+    cuerpo: Record<string, string | string[] | undefined>,
   ): Promise<PropuestaRelectura> {
     const url = process.env.WATCHER_URL?.replace(/\/$/, '');
     const token = process.env.WATCHER_TOKEN;

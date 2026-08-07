@@ -128,7 +128,7 @@ export class DocumentoController {
   // Applies the changes that were shown, and only those.
   @Post('aplicar-relectura')
   async aplicarRelectura(
-    @Body() cuerpo: { propuestaId?: string },
+    @Body() cuerpo: { propuestaId?: string; elegidos?: string[] },
     @Req() request: Request,
   ): Promise<{ ok: boolean; aplicados?: number; motivo?: string }> {
     // Se valida la sesión igual que en el resto: el id de propuesta no es un
@@ -140,7 +140,10 @@ export class DocumentoController {
     }
 
     return this.documentoService
-      .aplicarRelectura({ propuestaId: cuerpo.propuestaId })
+      .aplicarRelectura({
+        propuestaId: cuerpo.propuestaId,
+        elegidos: cuerpo.elegidos,
+      })
       .catch((error: unknown) => {
         this.logger.error(
           `Applying a reread failed: ${
