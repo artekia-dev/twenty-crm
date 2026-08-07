@@ -26,6 +26,11 @@ export enum AppPath {
   RecordShowPage = '/object/:objectNameSingular/:objectRecordId',
   PageLayoutPage = '/page/:pageLayoutId',
 
+  // Panel a medida de CFARYC. Vive fuera del sistema de widgets del CRM porque
+  // lo que hacia falta —filtros dentro de cada grafico y que se lea en un
+  // movil— no se puede montar con widgets de tamano fijo.
+  PanelHolding = '/panel/holding',
+
   Settings = `settings`,
   SettingsCatchAll = `/${Settings}/*`,
   Developers = `developers`,

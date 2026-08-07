@@ -111,6 +111,12 @@ const StandalonePageLayoutPage = lazy(() =>
   })),
 );
 
+const PanelHoldingPage = lazy(() =>
+  import('~/pages/panel/PanelHoldingPage').then((module) => ({
+    default: module.PanelHoldingPage,
+  })),
+);
+
 const WorkspaceSetup = lazyWithPreload(() =>
   import('~/pages/onboarding/WorkspaceSetup').then((module) => ({
     default: module.WorkspaceSetup,
@@ -173,6 +179,14 @@ const createWorkspaceAppRouter = (
                 element={
                   <LazyRoute>
                     <RecordShowPage />
+                  </LazyRoute>
+                }
+              />
+              <Route
+                path={AppPath.PanelHolding}
+                element={
+                  <LazyRoute>
+                    <PanelHoldingPage />
                   </LazyRoute>
                 }
               />
