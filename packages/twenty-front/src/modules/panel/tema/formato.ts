@@ -84,6 +84,11 @@ export const etiquetaDeMes = (clave: string): string => {
 export const escalaBonita = (maximo: number, divisionesDeseadas = 4): number[] => {
   if (!Number.isFinite(maximo) || maximo <= 0) return [];
 
+  // Con importes por debajo de un euro la escala redondeada colapsa: las cuatro
+  // marcas salen "1 €" repetido, que parece un fallo de pintado. Mejor una
+  // sola marca honesta que cuatro iguales.
+  if (maximo < 4) return [Math.max(1, Math.ceil(maximo))];
+
   const aproximado = maximo / divisionesDeseadas;
   const magnitud = 10 ** Math.floor(Math.log10(aproximado));
   const normalizado = aproximado / magnitud;
@@ -103,3 +108,8 @@ export const escalaBonita = (maximo: number, divisionesDeseadas = 4): number[] =
 
   return marcas;
 };
+
+
+/** "1 factura" / "3 facturas". El plural mal puesto delata que nadie lo miró. */
+export const plural = (cantidad: number, singular: string, plural_: string): string =>
+  `${formatearEntero(cantidad)} ${cantidad === 1 ? singular : plural_}`;

@@ -117,6 +117,12 @@ const PanelHoldingPage = lazy(() =>
   })),
 );
 
+const PanelSociedadPage = lazy(() =>
+  import('~/pages/panel/PanelSociedadPage').then((module) => ({
+    default: module.PanelSociedadPage,
+  })),
+);
+
 const WorkspaceSetup = lazyWithPreload(() =>
   import('~/pages/onboarding/WorkspaceSetup').then((module) => ({
     default: module.WorkspaceSetup,
@@ -187,6 +193,14 @@ const createWorkspaceAppRouter = (
                 element={
                   <LazyRoute>
                     <PanelHoldingPage />
+                  </LazyRoute>
+                }
+              />
+              <Route
+                path={AppPath.PanelSociedad}
+                element={
+                  <LazyRoute>
+                    <PanelSociedadPage />
                   </LazyRoute>
                 }
               />

@@ -11,6 +11,7 @@ import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 // empresa desde el panel.
 
 type EmpresaPanel = {
+  __typename: string;
   id: string;
   name: string | null;
   nif: string | null;

@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import { GrupoBotones } from '@/panel/components/GrupoBotones';
 import { TarjetaGrafico } from '@/panel/components/TarjetaGrafico';
 import { TarjetaKpi } from '@/panel/components/TarjetaKpi';
-import { enlaceFacturas } from '@/panel/datos/enlacesAFacturas';
+import { enlacesDePanel } from '@/panel/datos/enlacesAFacturas';
 import {
   agruparPor,
   calcularAntiguedad,
@@ -23,7 +23,7 @@ import {
 import { GraficoAnillo } from '@/panel/graficos/GraficoAnillo';
 import { GraficoMeses } from '@/panel/graficos/GraficoMeses';
 import { GraficoRanking } from '@/panel/graficos/GraficoRanking';
-import { formatearEntero, formatearEuros } from '@/panel/tema/formato';
+import { formatearEntero, formatearEuros, plural } from '@/panel/tema/formato';
 import { COLORES, colorDeCategoria } from '@/panel/tema/paleta';
 
 // Panel de la holding.
@@ -153,7 +153,13 @@ const ORDENES: { valor: OrdenRanking; etiqueta: string; etiquetaCorta: string }[
   { valor: 'nombre', etiqueta: 'Por nombre', etiquetaCorta: 'A-Z' },
 ];
 
-export const PanelHolding = () => {
+export type PanelFacturacionProps = {
+  /** Sin esto, el panel del grupo entero. Con esto, el de una sociedad. */
+  sociedadId?: string;
+  titulo: string;
+};
+
+export const PanelFacturacion = ({ sociedadId, titulo }: PanelFacturacionProps) => {
   const [periodo, setPeriodo] = useState<Periodo>('12m');
   const [direccion, setDireccion] = useState<'ambas' | 'compras' | 'ventas'>('ambas');
   const [orden, setOrden] = useState<OrdenRanking>('importe');
@@ -164,8 +170,15 @@ export const PanelHolding = () => {
   const conIva = iva === 'con';
   const [verTodasLasSociedades, setVerTodasLasSociedades] = useState(true);
 
-  const { facturas, cargando, error, desde, truncado, totalReal } =
-    usePanelFacturas(periodo);
+  const { facturas, cargando, error, desde, truncado, totalReal } = usePanelFacturas(
+    periodo,
+    sociedadId,
+  );
+
+  const enlaces = useMemo(
+    () => enlacesDePanel({ desde, sociedadId }),
+    [desde, sociedadId],
+  );
   const empresas = useEmpresas();
 
   // Sin una sola venta en el periodo, ofrecer la serie enseña a ignorar el
@@ -296,12 +309,12 @@ export const PanelHolding = () => {
     <StyledPagina>
       <StyledCabecera>
         <StyledTitulos>
-          <StyledTitulo>Holding · CFARYC</StyledTitulo>
+          <StyledTitulo>{titulo}</StyledTitulo>
           <StyledSubtitulo>
             {ETIQUETAS_PERIODO[periodo]} ·{' '}
             {cargando
               ? 'cargando…'
-              : `${formatearEntero(resumen.numeroFacturas)} facturas`}
+              : plural(resumen.numeroFacturas, 'factura', 'facturas')}
           </StyledSubtitulo>
         </StyledTitulos>
         <GrupoBotones
@@ -335,27 +348,27 @@ export const PanelHolding = () => {
           valor={formatearEuros(resumen.compras)}
           detalle={`${conIva ? 'Total con IVA' : 'Base imponible'} del periodo`}
           color="compras"
-          enlace={enlaceFacturas.porDireccion(desde, 'COMPRA')}
+          enlace={enlaces.porDireccion('COMPRA')}
         />
         <TarjetaKpi
           titulo="Ventas"
           valor={formatearEuros(resumen.ventas)}
           detalle={`${conIva ? 'Total con IVA' : 'Base imponible'} del periodo`}
           color="ventas"
-          enlace={enlaceFacturas.porDireccion(desde, 'VENTA')}
+          enlace={enlaces.porDireccion('VENTA')}
         />
         <TarjetaKpi
           titulo="Sin contabilizar"
           valor={formatearEuros(resumen.importePendiente)}
-          detalle={`${formatearEntero(resumen.pendientesDeContabilizar)} facturas`}
+          detalle={plural(resumen.pendientesDeContabilizar, 'factura', 'facturas')}
           color="pendiente"
-          enlace={enlaceFacturas.sinContabilizar(desde)}
+          enlace={enlaces.sinContabilizar()}
         />
         <TarjetaKpi
           titulo="Pendiente de pago"
           valor={formatearEuros(resumen.importePendienteDePago)}
-          detalle={`${formatearEntero(resumen.pendientesDePago)} compras sin pagar`}
-          enlace={enlaceFacturas.sinPagar(desde)}
+          detalle={`${plural(resumen.pendientesDePago, 'compra', 'compras')} sin pagar`}
+          enlace={enlaces.sinPagar()}
         />
       </StyledCifras>
 
@@ -395,9 +408,7 @@ export const PanelHolding = () => {
             <GraficoRanking
               filas={proveedores.map((p, i) => {
                 const nif = nifDeProveedor.get(p.id);
-                const documentos = `${formatearEntero(p.documentos)} ${
-                  p.documentos === 1 ? 'factura' : 'facturas'
-                }`;
+                const documentos = plural(p.documentos, 'factura', 'facturas');
 
                 return {
                   id: p.id,
@@ -407,7 +418,7 @@ export const PanelHolding = () => {
                   detalle: nif && nif !== p.nombre ? `${nif} · ${documentos}` : documentos,
                   valor: p.importe,
                   color: colorDeCategoria(i),
-                  enlace: enlaceFacturas.deProveedor(desde, { cif: nif, nombre: p.nombre }),
+                  enlace: enlaces.deProveedor({ cif: nif, nombre: p.nombre }),
                 };
               })}
               total={totalProveedores}
@@ -433,14 +444,14 @@ export const PanelHolding = () => {
                 valor={formatearEuros(iva12.soportado)}
                 detalle="IVA de las compras · se deduce"
                 color="compras"
-                enlace={enlaceFacturas.porDireccion(desde, 'COMPRA')}
+                enlace={enlaces.porDireccion('COMPRA')}
               />
               <TarjetaKpi
                 titulo="Repercutido"
                 valor={formatearEuros(iva12.repercutido)}
                 detalle="IVA de las ventas · se ingresa"
                 color="ventas"
-                enlace={enlaceFacturas.porDireccion(desde, 'VENTA')}
+                enlace={enlaces.porDireccion('VENTA')}
               />
               <TarjetaKpi
                 titulo={iva12.diferencia >= 0 ? 'A ingresar' : 'A compensar'}
@@ -458,9 +469,7 @@ export const PanelHolding = () => {
               filas={antiguedad.map((tramo) => ({
                 id: tramo.id,
                 nombre: tramo.etiqueta,
-                detalle: `${formatearEntero(tramo.documentos)} ${
-                  tramo.documentos === 1 ? 'factura' : 'facturas'
-                }`,
+                detalle: plural(tramo.documentos, 'factura', 'facturas'),
                 valor: tramo.importe,
                 // El rojo se reserva a lo que lleva mas de tres meses parado:
                 // eso ya no es el ritmo normal de trabajo.
@@ -470,13 +479,13 @@ export const PanelHolding = () => {
                     : tramo.id === 'medio'
                       ? COLORES.pendiente
                       : COLORES.neutro,
-                enlace: enlaceFacturas.sinContabilizar(desde),
+                enlace: enlaces.sinContabilizar(),
               }))}
             />
           </TarjetaGrafico>
         </StyledDosColumnas>
 
-        {porSociedad.length > 1 && (
+        {!sociedadId && porSociedad.length > 1 && (
           <TarjetaGrafico
             titulo="Reparto por sociedad"
             descripcion="Qué parte del movimiento del grupo lleva cada una"
@@ -496,12 +505,10 @@ export const PanelHolding = () => {
                 detalle:
                   soc.documentos === 0
                     ? 'Sin movimiento en el periodo'
-                    : `${formatearEntero(soc.documentos)} ${
-                        soc.documentos === 1 ? 'factura' : 'facturas'
-                      }`,
+                    : plural(soc.documentos, 'factura', 'facturas'),
                 valor: soc.importe,
                 color: soc.documentos === 0 ? COLORES.neutro : colorDeCategoria(i),
-                enlace: enlaceFacturas.deSociedad(desde, soc.id),
+                enlace: enlaces.deSociedad(soc.id),
               }))}
               total={porSociedad.reduce((suma, s) => suma + s.importe, 0)}
             />
@@ -522,28 +529,32 @@ export const PanelHolding = () => {
                 valor={formatearEntero(resumen.conAvisoSociedad)}
                 detalle="El CIF no casa con la ficha, o la carpeta dice otra"
                 esAviso={resumen.conAvisoSociedad > 0}
-                enlace={enlaceFacturas.conAvisoSociedad(desde)}
+                enlace={enlaces.conAvisoSociedad()}
               />
               <TarjetaKpi
                 titulo="Aviso de documento"
                 valor={formatearEntero(resumen.conAvisoTipo)}
                 detalle="Ilegible, tipo inesperado o varios en un PDF"
                 esAviso={resumen.conAvisoTipo > 0}
-                enlace={enlaceFacturas.conAvisoTipo(desde)}
+                enlace={enlaces.conAvisoTipo()}
               />
-              <TarjetaKpi
-                titulo="Sin sociedad"
-                valor={formatearEntero(resumen.sinSociedad)}
-                detalle="Esperando en la carpeta general"
-                esAviso={resumen.sinSociedad > 0}
-                enlace={enlaceFacturas.sinSociedad(desde)}
-              />
+              {/* En el panel de una sociedad siempre valdria 0: se filtra por
+                  sociedad, asi que una factura sin ella nunca entra. */}
+              {!sociedadId && (
+                <TarjetaKpi
+                  titulo="Sin sociedad"
+                  valor={formatearEntero(resumen.sinSociedad)}
+                  detalle="Esperando en la carpeta general"
+                  esAviso={resumen.sinSociedad > 0}
+                  enlace={enlaces.sinSociedad()}
+                />
+              )}
               <TarjetaKpi
                 titulo="Sin compra ni venta"
                 valor={formatearEntero(resumen.sinDireccion)}
                 detalle="No se supo de qué lado está el grupo"
                 esAviso={resumen.sinDireccion > 0}
-                enlace={enlaceFacturas.sinDireccion(desde)}
+                enlace={enlaces.sinDireccion()}
               />
             </StyledCifras>
           </TarjetaGrafico>

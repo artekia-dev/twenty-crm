@@ -30,6 +30,7 @@ export enum AppPath {
   // lo que hacia falta —filtros dentro de cada grafico y que se lea en un
   // movil— no se puede montar con widgets de tamano fijo.
   PanelHolding = '/panel/holding',
+  PanelSociedad = '/panel/sociedad/:sociedadId',
 
   Settings = `settings`,
   SettingsCatchAll = `/${Settings}/*`,

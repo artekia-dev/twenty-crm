@@ -18,6 +18,9 @@ import { useFindManyRecords } from '@/object-record/hooks/useFindManyRecords';
 // se aplica solo: quien no ve una sociedad tampoco la ve sumada aqui.
 
 export type FacturaPanel = {
+  // Lo exige `ObjectRecord`: Apollo lo devuelve en cada registro y el tipo del
+  // hook lo da por hecho.
+  __typename: string;
   id: string;
   fechaEmision: string | null;
   direccion: 'COMPRA' | 'VENTA' | 'DESCONOCIDA' | null;
@@ -75,13 +78,20 @@ export const inicioDelPeriodo = (periodo: Periodo, hoy: Date): Date => {
 // hay que mover los cortes a agregaciones de servidor, que el CRM ya tiene.
 const LIMITE = 1000;
 
-export const usePanelFacturas = (periodo: Periodo) => {
+export const usePanelFacturas = (periodo: Periodo, sociedadId?: string) => {
   const desde = useMemo(() => inicioDelPeriodo(periodo, new Date()), [periodo]);
 
   const { records, loading, error, totalCount } = useFindManyRecords<FacturaPanel>({
     // Objeto a medida del fork: no esta en el enum de objetos estandar.
     objectNameSingular: 'factura',
-    filter: { fechaEmision: { gte: desde.toISOString() } },
+    filter: {
+      fechaEmision: { gte: desde.toISOString() },
+      // El panel de una sociedad filtra en SERVIDOR y no en cliente: filtrar
+      // despues de traer 1000 facturas del grupo entero daria a cada sociedad
+      // las migajas que quepan en ese tope, y con mas facturas de las que caben
+      // una sociedad pequena podria salir vacia sin que nada lo indique.
+      ...(sociedadId ? { sociedadId: { eq: sociedadId } } : {}),
+    },
     recordGqlFields: CAMPOS,
     limit: LIMITE,
   });

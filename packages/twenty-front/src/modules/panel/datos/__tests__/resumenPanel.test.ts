@@ -13,6 +13,7 @@ import { escalaBonita } from '@/panel/tema/formato';
 // calculos estan fuera de los componentes y probados.
 
 const factura = (over: Partial<FacturaPanel> = {}): FacturaPanel => ({
+  __typename: 'Factura',
   id: Math.random().toString(36).slice(2),
   fechaEmision: '2026-03-15T00:00:00.000Z',
   direccion: 'COMPRA',
