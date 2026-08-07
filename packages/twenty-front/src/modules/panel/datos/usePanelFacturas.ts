@@ -71,18 +71,34 @@ export const inicioDelPeriodo = (periodo: Periodo, hoy: Date): Date => {
   return new Date(hoy.getFullYear(), hoy.getMonth() - (meses - 1), 1);
 };
 
+// Techo de lo que se trae para calcular en cliente. Con mas facturas que esto
+// hay que mover los cortes a agregaciones de servidor, que el CRM ya tiene.
+const LIMITE = 1000;
+
 export const usePanelFacturas = (periodo: Periodo) => {
   const desde = useMemo(() => inicioDelPeriodo(periodo, new Date()), [periodo]);
 
-  const { records, loading, error } = useFindManyRecords<FacturaPanel>({
+  const { records, loading, error, totalCount } = useFindManyRecords<FacturaPanel>({
     // Objeto a medida del fork: no esta en el enum de objetos estandar.
     objectNameSingular: 'factura',
     filter: { fechaEmision: { gte: desde.toISOString() } },
     recordGqlFields: CAMPOS,
-    limit: 1000,
+    limit: LIMITE,
   });
 
-  return { facturas: records, cargando: loading, error, desde };
+  // Un panel que suma 1.000 de 1.400 no va mas lento: va igual de rapido y
+  // miente. El sintoma aparece meses despues, cuando el IVA no cuadra. Mientras
+  // los cortes se calculen en cliente, hay que decirlo en pantalla.
+  const truncado = totalCount !== undefined && totalCount > records.length;
+
+  return {
+    facturas: records,
+    cargando: loading,
+    error,
+    desde,
+    truncado,
+    totalReal: totalCount ?? records.length,
+  };
 };
 
 /** Euros a partir del campo de importe del CRM, que viaja en micros. */

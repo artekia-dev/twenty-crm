@@ -87,6 +87,15 @@ const StyledCifras = styled.div`
 // El interruptor de IVA gobierna TODOS los importes del panel, asi que va
 // suelto encima de las cifras y no dentro de una tarjeta: dentro pareceria que
 // solo afecta a esa.
+const StyledAvisoTruncado = styled.div`
+  background: ${themeCssVariables.background.transparent.light};
+  border: 1px solid ${themeCssVariables.border.color.medium};
+  border-radius: ${themeCssVariables.border.radius.md};
+  color: ${themeCssVariables.font.color.secondary};
+  font-size: ${themeCssVariables.font.size.sm};
+  padding: ${themeCssVariables.spacing[3]};
+`;
+
 const StyledBarraIva = styled.div`
   display: flex;
   justify-content: flex-end;
@@ -153,9 +162,16 @@ export const PanelHolding = () => {
   const [iva, setIva] = useState<'sin' | 'con'>('sin');
 
   const conIva = iva === 'con';
+  // Sin una sola venta en el periodo, ofrecer la serie enseña a ignorar el
+  // grafico: se pinta una linea plana en cero que no significa nada.
+  const hayVentas = useMemo(
+    () => facturas.some((f) => f.direccion === 'VENTA'),
+    [facturas],
+  );
   const [verTodasLasSociedades, setVerTodasLasSociedades] = useState(true);
 
-  const { facturas, cargando, error, desde } = usePanelFacturas(periodo);
+  const { facturas, cargando, error, desde, truncado, totalReal } =
+    usePanelFacturas(periodo);
   const empresas = useEmpresas();
 
   const resumen = useMemo(() => calcularResumen(facturas, conIva), [facturas, conIva]);
@@ -295,6 +311,14 @@ export const PanelHolding = () => {
         />
       </StyledCabecera>
 
+      {truncado && (
+        <StyledAvisoTruncado>
+          Se están sumando {formatearEntero(facturas.length)} facturas de{' '}
+          {formatearEntero(totalReal)}. Las cifras de esta pantalla no están completas:
+          acota el periodo para verlas todas.
+        </StyledAvisoTruncado>
+      )}
+
       <StyledBarraIva>
         <GrupoBotones
           opciones={IVA}
@@ -340,7 +364,7 @@ export const PanelHolding = () => {
           descripcion={`${conIva ? 'Total con IVA' : 'Base imponible'}. Toca un mes para ver el detalle.`}
           controles={
             <GrupoBotones
-              opciones={DIRECCIONES}
+              opciones={hayVentas ? DIRECCIONES : [DIRECCIONES[0]!, DIRECCIONES[1]!]}
               seleccion={direccion}
               alCambiar={setDireccion}
               etiquetaAccesible="Qué series se muestran"
@@ -350,7 +374,7 @@ export const PanelHolding = () => {
           <GraficoMeses
             datos={serie}
             mostrarCompras={direccion !== 'ventas'}
-            mostrarVentas={direccion !== 'compras'}
+            mostrarVentas={hayVentas && direccion !== 'compras'}
           />
         </TarjetaGrafico>
 
