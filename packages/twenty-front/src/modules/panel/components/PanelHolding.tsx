@@ -162,17 +162,18 @@ export const PanelHolding = () => {
   const [iva, setIva] = useState<'sin' | 'con'>('sin');
 
   const conIva = iva === 'con';
+  const [verTodasLasSociedades, setVerTodasLasSociedades] = useState(true);
+
+  const { facturas, cargando, error, desde, truncado, totalReal } =
+    usePanelFacturas(periodo);
+  const empresas = useEmpresas();
+
   // Sin una sola venta en el periodo, ofrecer la serie enseña a ignorar el
   // grafico: se pinta una linea plana en cero que no significa nada.
   const hayVentas = useMemo(
     () => facturas.some((f) => f.direccion === 'VENTA'),
     [facturas],
   );
-  const [verTodasLasSociedades, setVerTodasLasSociedades] = useState(true);
-
-  const { facturas, cargando, error, desde, truncado, totalReal } =
-    usePanelFacturas(periodo);
-  const empresas = useEmpresas();
 
   const resumen = useMemo(() => calcularResumen(facturas, conIva), [facturas, conIva]);
 
