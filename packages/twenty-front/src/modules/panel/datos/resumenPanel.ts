@@ -186,3 +186,89 @@ export const agruparPor = (
 
   return filas.sort((a, b) => b.importe - a.importe);
 };
+
+/**
+ * IVA del periodo, separado por direccion.
+ *
+ * Es la cifra que se lleva al modelo trimestral y no estaba en ningun sitio del
+ * panel: habia que abrir la lista, filtrar y sumar a mano. Soportado es el de
+ * las compras (se deduce), repercutido el de las ventas (se ingresa), y la
+ * diferencia es lo que sale a pagar o a devolver.
+ */
+export type ResumenIva = {
+  soportado: number;
+  repercutido: number;
+  diferencia: number;
+};
+
+export const calcularIva = (facturas: FacturaPanel[]): ResumenIva => {
+  let soportado = 0;
+  let repercutido = 0;
+
+  for (const factura of facturas) {
+    const iva = euros(factura.iva);
+
+    if (esCompra(factura)) soportado += iva;
+    if (esVenta(factura)) repercutido += iva;
+  }
+
+  return { soportado, repercutido, diferencia: repercutido - soportado };
+};
+
+export type TramoAntiguedad = {
+  id: string;
+  etiqueta: string;
+  documentos: number;
+  importe: number;
+};
+
+/**
+ * Cuanto lleva esperando lo que no se ha contabilizado.
+ *
+ * "62 facturas sin contabilizar" no dice si son de esta semana o llevan medio
+ * ano ahi. Lo primero es normal; lo segundo es un problema, y hasta ahora solo
+ * se veia abriendo la lista y mirando fechas una a una.
+ */
+export const calcularAntiguedad = (
+  facturas: FacturaPanel[],
+  hoy: Date,
+  conIva: boolean,
+): TramoAntiguedad[] => {
+  const tramos: TramoAntiguedad[] = [
+    { id: 'reciente', etiqueta: 'Menos de 30 días', documentos: 0, importe: 0 },
+    { id: 'medio', etiqueta: 'De 30 a 90 días', documentos: 0, importe: 0 },
+    { id: 'viejo', etiqueta: 'Más de 90 días', documentos: 0, importe: 0 },
+    { id: 'sinFecha', etiqueta: 'Sin fecha', documentos: 0, importe: 0 },
+  ];
+
+  const meter = (indice: number, factura: FacturaPanel) => {
+    const tramo = tramos[indice];
+
+    if (!tramo) return;
+
+    tramo.documentos += 1;
+    tramo.importe += importeDe(factura, conIva);
+  };
+
+  for (const factura of facturas) {
+    if (factura.contabilizada === true) continue;
+
+    if (factura.fechaEmision === null) {
+      meter(3, factura);
+      continue;
+    }
+
+    const fecha = new Date(factura.fechaEmision);
+
+    if (Number.isNaN(fecha.getTime())) {
+      meter(3, factura);
+      continue;
+    }
+
+    const dias = Math.floor((hoy.getTime() - fecha.getTime()) / 86_400_000);
+
+    meter(dias < 30 ? 0 : dias < 90 ? 1 : 2, factura);
+  }
+
+  return tramos.filter((t) => t.documentos > 0);
+};

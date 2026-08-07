@@ -5,12 +5,16 @@ import { useMemo, useState } from 'react';
 import { GrupoBotones } from '@/panel/components/GrupoBotones';
 import { TarjetaGrafico } from '@/panel/components/TarjetaGrafico';
 import { TarjetaKpi } from '@/panel/components/TarjetaKpi';
+import { enlaceFacturas } from '@/panel/datos/enlacesAFacturas';
 import {
   agruparPor,
+  calcularAntiguedad,
+  calcularIva,
   calcularResumen,
   calcularSerieMensual,
   type OrdenRanking,
 } from '@/panel/datos/resumenPanel';
+import { normalizarNif, useEmpresas } from '@/panel/datos/useEmpresas';
 import {
   ETIQUETAS_PERIODO,
   usePanelFacturas,
@@ -146,6 +150,7 @@ export const PanelHolding = () => {
   const conIva = iva === 'con';
 
   const { facturas, cargando, error, desde } = usePanelFacturas(periodo);
+  const empresas = useEmpresas();
 
   const resumen = useMemo(() => calcularResumen(facturas, conIva), [facturas, conIva]);
 
@@ -154,23 +159,68 @@ export const PanelHolding = () => {
     [facturas, desde, conIva],
   );
 
+  // Quien es cada proveedor, en este orden: la ficha de empresa del CRM si su
+  // NIF esta dado de alta —es el dato mantenido—, el nombre que se leyo del
+  // documento si no, y el CIF a secas como ultimo recurso. Un CIF dice poco,
+  // pero una tarjeta vacia no dice nada y encima parece que el panel falla.
   const proveedores = useMemo(
     () =>
       agruparPor(
         facturas.filter((f) => f.direccion === 'COMPRA'),
-        // El nombre si se leyo del documento; si no, el CIF. Un CIF dice poco,
-        // pero una tarjeta vacia no dice nada y ademas parece que el panel
-        // esta roto: los datos estan ahi, solo que sin nombre todavia.
-        (f) =>
-          f.contraparte
-            ? { id: f.contraparte, nombre: f.contraparte }
-            : f.cifEmisor
-              ? { id: f.cifEmisor, nombre: f.cifEmisor }
-              : null,
+        (f) => {
+          const nif = normalizarNif(f.cifEmisor);
+          const ficha = nif ? empresas.porNif.get(nif) : undefined;
+          const nombre = ficha?.nombre ?? f.contraparte ?? nif;
+
+          return nombre ? { id: nif || nombre, nombre } : null;
+        },
         orden,
         conIva,
       ).slice(0, 8),
-    [facturas, orden, conIva],
+    [facturas, orden, conIva, empresas],
+  );
+
+  // El NIF de cada proveedor, para poder escribirlo bajo el nombre y para
+  // filtrar por el al pulsar la fila.
+  const nifDeProveedor = useMemo(() => {
+    const porGrupo = new Map<string, string>();
+
+    for (const f of facturas) {
+      const nif = normalizarNif(f.cifEmisor);
+
+      if (!nif) continue;
+
+      const ficha = empresas.porNif.get(nif);
+      const clave = nif || (ficha?.nombre ?? f.contraparte ?? '');
+
+      if (clave) porGrupo.set(clave, nif);
+    }
+
+    return porGrupo;
+  }, [facturas, empresas]);
+
+  const iva12 = useMemo(() => calcularIva(facturas), [facturas]);
+
+  const antiguedad = useMemo(
+    () => calcularAntiguedad(facturas, new Date(), conIva),
+    [facturas, conIva],
+  );
+
+  const porSociedad = useMemo(
+    () =>
+      agruparPor(
+        facturas,
+        (f) =>
+          f.sociedadId
+            ? {
+                id: f.sociedadId,
+                nombre: empresas.porId.get(f.sociedadId)?.nombre ?? 'Sin nombre',
+              }
+            : null,
+        'importe',
+        conIva,
+      ),
+    [facturas, conIva, empresas],
   );
 
   const totalProveedores = proveedores.reduce((suma, p) => suma + p.importe, 0);
@@ -238,23 +288,27 @@ export const PanelHolding = () => {
           valor={formatearEuros(resumen.compras)}
           detalle={`${conIva ? 'Total con IVA' : 'Base imponible'} del periodo`}
           color="compras"
+          enlace={enlaceFacturas.porDireccion(desde, 'COMPRA')}
         />
         <TarjetaKpi
           titulo="Ventas"
           valor={formatearEuros(resumen.ventas)}
           detalle={`${conIva ? 'Total con IVA' : 'Base imponible'} del periodo`}
           color="ventas"
+          enlace={enlaceFacturas.porDireccion(desde, 'VENTA')}
         />
         <TarjetaKpi
           titulo="Sin contabilizar"
           valor={formatearEuros(resumen.importePendiente)}
           detalle={`${formatearEntero(resumen.pendientesDeContabilizar)} facturas`}
           color="pendiente"
+          enlace={enlaceFacturas.sinContabilizar(desde)}
         />
         <TarjetaKpi
           titulo="Pendiente de pago"
           valor={formatearEuros(resumen.importePendienteDePago)}
           detalle={`${formatearEntero(resumen.pendientesDePago)} compras sin pagar`}
+          enlace={enlaceFacturas.sinPagar(desde)}
         />
       </StyledCifras>
 
@@ -292,12 +346,23 @@ export const PanelHolding = () => {
             }
           >
             <GraficoRanking
-              filas={proveedores.map((p, i) => ({
-                id: p.id,
-                nombre: p.nombre,
-                valor: p.importe,
-                color: colorDeCategoria(i),
-              }))}
+              filas={proveedores.map((p, i) => {
+                const nif = nifDeProveedor.get(p.id);
+                const documentos = `${formatearEntero(p.documentos)} ${
+                  p.documentos === 1 ? 'factura' : 'facturas'
+                }`;
+
+                return {
+                  id: p.id,
+                  nombre: p.nombre,
+                  // El NIF debajo del nombre, no en su lugar: identifica sin
+                  // ruido cuando dos proveedores se llaman parecido.
+                  detalle: nif && nif !== p.nombre ? `${nif} · ${documentos}` : documentos,
+                  valor: p.importe,
+                  color: colorDeCategoria(i),
+                  enlace: enlaceFacturas.deProveedor(desde, { cif: nif, nombre: p.nombre }),
+                };
+              })}
               total={totalProveedores}
             />
           </TarjetaGrafico>
@@ -309,6 +374,81 @@ export const PanelHolding = () => {
             <GraficoAnillo sectores={circuito} leyendaCentro="facturas en el periodo" />
           </TarjetaGrafico>
         </StyledDosColumnas>
+
+        <StyledDosColumnas>
+          <TarjetaGrafico
+            titulo="IVA del periodo"
+            descripcion="Lo que se lleva al modelo trimestral"
+          >
+            <StyledCifras>
+              <TarjetaKpi
+                titulo="Soportado"
+                valor={formatearEuros(iva12.soportado)}
+                detalle="IVA de las compras · se deduce"
+                color="compras"
+                enlace={enlaceFacturas.porDireccion(desde, 'COMPRA')}
+              />
+              <TarjetaKpi
+                titulo="Repercutido"
+                valor={formatearEuros(iva12.repercutido)}
+                detalle="IVA de las ventas · se ingresa"
+                color="ventas"
+                enlace={enlaceFacturas.porDireccion(desde, 'VENTA')}
+              />
+              <TarjetaKpi
+                titulo={iva12.diferencia >= 0 ? 'A ingresar' : 'A compensar'}
+                valor={formatearEuros(Math.abs(iva12.diferencia))}
+                detalle="Repercutido menos soportado"
+              />
+            </StyledCifras>
+          </TarjetaGrafico>
+
+          <TarjetaGrafico
+            titulo="Antigüedad de lo pendiente"
+            descripcion="Cuánto llevan esperando las facturas sin contabilizar"
+          >
+            <GraficoRanking
+              filas={antiguedad.map((tramo) => ({
+                id: tramo.id,
+                nombre: tramo.etiqueta,
+                detalle: `${formatearEntero(tramo.documentos)} ${
+                  tramo.documentos === 1 ? 'factura' : 'facturas'
+                }`,
+                valor: tramo.importe,
+                // El rojo se reserva a lo que lleva mas de tres meses parado:
+                // eso ya no es el ritmo normal de trabajo.
+                color:
+                  tramo.id === 'viejo' || tramo.id === 'sinFecha'
+                    ? COLORES.aviso
+                    : tramo.id === 'medio'
+                      ? COLORES.pendiente
+                      : COLORES.neutro,
+                enlace: enlaceFacturas.sinContabilizar(desde),
+              }))}
+            />
+          </TarjetaGrafico>
+        </StyledDosColumnas>
+
+        {porSociedad.length > 1 && (
+          <TarjetaGrafico
+            titulo="Reparto por sociedad"
+            descripcion="Qué parte del movimiento del grupo lleva cada una"
+          >
+            <GraficoRanking
+              filas={porSociedad.map((soc, i) => ({
+                id: soc.id,
+                nombre: soc.nombre,
+                detalle: `${formatearEntero(soc.documentos)} ${
+                  soc.documentos === 1 ? 'factura' : 'facturas'
+                }`,
+                valor: soc.importe,
+                color: colorDeCategoria(i),
+                enlace: enlaceFacturas.deSociedad(desde, soc.id),
+              }))}
+              total={porSociedad.reduce((suma, s) => suma + s.importe, 0)}
+            />
+          </TarjetaGrafico>
+        )}
 
         {(resumen.conAviso > 0 ||
           resumen.sinSociedad > 0 ||
@@ -323,18 +463,21 @@ export const PanelHolding = () => {
                 valor={formatearEntero(resumen.conAviso)}
                 detalle="Datos maestros o lectura a confirmar"
                 esAviso={resumen.conAviso > 0}
+                enlace={enlaceFacturas.conAviso(desde)}
               />
               <TarjetaKpi
                 titulo="Sin sociedad"
                 valor={formatearEntero(resumen.sinSociedad)}
                 detalle="Esperando en la carpeta general"
                 esAviso={resumen.sinSociedad > 0}
+                enlace={enlaceFacturas.sinSociedad(desde)}
               />
               <TarjetaKpi
                 titulo="Sin compra ni venta"
                 valor={formatearEntero(resumen.sinDireccion)}
                 detalle="No se supo de qué lado está el grupo"
                 esAviso={resumen.sinDireccion > 0}
+                enlace={enlaceFacturas.sinDireccion(desde)}
               />
             </StyledCifras>
           </TarjetaGrafico>

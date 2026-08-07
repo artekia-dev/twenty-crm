@@ -1,4 +1,6 @@
+import { css } from '@linaria/core';
 import { styled } from '@linaria/react';
+import { Link } from 'react-router-dom';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { COLORES, type NombreColor } from '@/panel/tema/paleta';
@@ -18,15 +20,19 @@ type TarjetaKpiProps = {
   color?: NombreColor;
   /** Pinta la cifra en rojo cuando el valor esperado era cero. */
   esAviso?: boolean;
-  alPulsar?: () => void;
+  /** A donde lleva: la lista de facturas ya filtrada por lo que cuenta la cifra. */
+  enlace?: string;
 };
 
-const StyledTarjeta = styled.button<{ pulsable: boolean }>`
+// Los estilos van en una clase suelta y no en dos componentes con el mismo
+// cuerpo: la tarjeta es un <a> cuando lleva a algun sitio y un <div> cuando no,
+// y duplicar el bloque acabaria con los dos separandose a la primera.
+const tarjeta = css`
   align-items: flex-start;
   background: ${themeCssVariables.background.secondary};
   border: 1px solid ${themeCssVariables.border.color.light};
   border-radius: ${themeCssVariables.border.radius.md};
-  cursor: ${({ pulsable }) => (pulsable ? 'pointer' : 'default')};
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[1]};
@@ -35,12 +41,18 @@ const StyledTarjeta = styled.button<{ pulsable: boolean }>`
   justify-content: center;
   padding: ${themeCssVariables.spacing[3]};
   text-align: left;
-  transition: border-color 150ms;
   width: 100%;
+`;
+
+// Solo cuando lleva a algun sitio. Si no, el puntero prometeria algo que no
+// ocurre al pulsar.
+const tarjetaPulsable = css`
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 150ms;
 
   &:hover {
-    border-color: ${({ pulsable }) =>
-      pulsable ? themeCssVariables.border.color.strong : themeCssVariables.border.color.light};
+    border-color: ${themeCssVariables.border.color.strong};
   }
 `;
 
@@ -73,24 +85,27 @@ export const TarjetaKpi = ({
   detalle,
   color,
   esAviso,
-  alPulsar,
+  enlace,
 }: TarjetaKpiProps) => {
-  const colorTexto = esAviso
-    ? COLORES.aviso
-    : color
-      ? COLORES[color]
-      : 'currentColor';
+  const colorTexto = esAviso ? COLORES.aviso : color ? COLORES[color] : 'currentColor';
 
-  return (
-    <StyledTarjeta
-      type="button"
-      pulsable={Boolean(alPulsar)}
-      onClick={alPulsar}
-      disabled={!alPulsar}
-    >
+  const contenido = (
+    <>
       <StyledTitulo>{titulo}</StyledTitulo>
       <StyledValor colorTexto={colorTexto}>{valor}</StyledValor>
       {detalle && <StyledDetalle>{detalle}</StyledDetalle>}
-    </StyledTarjeta>
+    </>
   );
+
+  // Un enlace de verdad y no un div con onClick: asi se puede abrir en otra
+  // pestana, copiar la direccion y llegar con el teclado.
+  if (enlace) {
+    return (
+      <Link to={enlace} className={`${tarjeta} ${tarjetaPulsable}`}>
+        {contenido}
+      </Link>
+    );
+  }
+
+  return <div className={tarjeta}>{contenido}</div>;
 };

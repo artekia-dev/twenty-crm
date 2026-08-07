@@ -1,5 +1,7 @@
 import {
   agruparPor,
+  calcularAntiguedad,
+  calcularIva,
   calcularResumen,
   calcularSerieMensual,
 } from '@/panel/datos/resumenPanel';
@@ -235,5 +237,77 @@ describe('escalaBonita', () => {
     expect(escalaBonita(0)).toEqual([]);
     expect(escalaBonita(-5)).toEqual([]);
     expect(escalaBonita(Number.NaN)).toEqual([]);
+  });
+});
+
+describe('calcularIva', () => {
+  // La cifra del modelo trimestral. Antes no estaba en el panel: habia que
+  // abrir la lista, filtrar por direccion y sumar a mano.
+  it('separa el soportado del repercutido y da la diferencia', () => {
+    const r = calcularIva([
+      factura({ direccion: 'COMPRA', iva: { amountMicros: 21_000_000 } }),
+      factura({ direccion: 'COMPRA', iva: { amountMicros: 10_000_000 } }),
+      factura({ direccion: 'VENTA', iva: { amountMicros: 50_000_000 } }),
+    ]);
+
+    expect(r.soportado).toBe(31);
+    expect(r.repercutido).toBe(50);
+    expect(r.diferencia).toBe(19);
+  });
+
+  it('una direccion desconocida no cuenta en ninguno de los dos', () => {
+    const r = calcularIva([factura({ direccion: 'DESCONOCIDA' })]);
+
+    expect(r.soportado).toBe(0);
+    expect(r.repercutido).toBe(0);
+  });
+});
+
+describe('calcularAntiguedad', () => {
+  const hoy = new Date(2026, 5, 15);
+  const haceDias = (dias: number) =>
+    new Date(hoy.getTime() - dias * 86_400_000).toISOString();
+
+  // "62 sin contabilizar" no dice si son de esta semana o llevan medio ano.
+  it('reparte lo pendiente por lo que lleva esperando', () => {
+    const tramos = calcularAntiguedad(
+      [
+        factura({ contabilizada: false, fechaEmision: haceDias(5) }),
+        factura({ contabilizada: false, fechaEmision: haceDias(45) }),
+        factura({ contabilizada: false, fechaEmision: haceDias(200) }),
+      ],
+      hoy,
+      false,
+    );
+
+    expect(tramos.map((t) => t.id)).toEqual(['reciente', 'medio', 'viejo']);
+    expect(tramos.every((t) => t.documentos === 1)).toBe(true);
+  });
+
+  it('lo ya contabilizado no aparece', () => {
+    expect(
+      calcularAntiguedad([factura({ contabilizada: true })], hoy, false),
+    ).toEqual([]);
+  });
+
+  it('sin fecha va a su propio tramo, no se descarta', () => {
+    const tramos = calcularAntiguedad(
+      [factura({ contabilizada: false, fechaEmision: null })],
+      hoy,
+      false,
+    );
+
+    expect(tramos).toHaveLength(1);
+    expect(tramos[0]?.id).toBe('sinFecha');
+  });
+
+  it('los tramos vacios no se pintan', () => {
+    const tramos = calcularAntiguedad(
+      [factura({ contabilizada: false, fechaEmision: haceDias(2) })],
+      hoy,
+      false,
+    );
+
+    expect(tramos).toHaveLength(1);
   });
 });

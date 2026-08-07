@@ -1,4 +1,6 @@
+import { css } from '@linaria/core';
 import { styled } from '@linaria/react';
+import { Link } from 'react-router-dom';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
 import { formatearEuros, formatearPorcentaje } from '@/panel/tema/formato';
@@ -14,15 +16,18 @@ import { formatearEuros, formatearPorcentaje } from '@/panel/tema/formato';
 export type FilaRanking = {
   id: string;
   nombre: string;
+  /** Segunda linea: el NIF, o cuantas facturas son. Lo que aclare quien es. */
+  detalle?: string;
   valor: number;
   color: string;
+  /** A donde lleva la fila: sus facturas, ya filtradas. */
+  enlace?: string;
 };
 
 type GraficoRankingProps = {
   filas: FilaRanking[];
   /** Se muestra el peso de cada fila sobre este total. Sin el, solo el importe. */
   total?: number;
-  alPulsarFila?: (id: string) => void;
 };
 
 const StyledLista = styled.ul`
@@ -34,9 +39,16 @@ const StyledLista = styled.ul`
   padding: 0;
 `;
 
-const StyledFila = styled.li<{ pulsable: boolean }>`
+const StyledFila = styled.li`
+  list-style: none;
+`;
+
+// La fila es un <a> cuando lleva a sus facturas y un <div> cuando no, asi que
+// los estilos van en clases sueltas en vez de en dos componentes gemelos.
+const contenidoFila = css`
   border-radius: ${themeCssVariables.border.radius.sm};
-  cursor: ${({ pulsable }) => (pulsable ? 'pointer' : 'default')};
+  box-sizing: border-box;
+  color: inherit;
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[1]};
@@ -44,11 +56,21 @@ const StyledFila = styled.li<{ pulsable: boolean }>`
   min-height: 44px;
   justify-content: center;
   padding: ${themeCssVariables.spacing[1]};
+  text-decoration: none;
+  width: 100%;
+`;
+
+const contenidoPulsable = css`
+  cursor: pointer;
 
   &:hover {
-    background: ${({ pulsable }) =>
-      pulsable ? themeCssVariables.background.transparent.lighter : 'transparent'};
+    background: ${themeCssVariables.background.transparent.lighter};
   }
+`;
+
+const StyledDetalleFila = styled.span`
+  color: ${themeCssVariables.font.color.tertiary};
+  font-size: ${themeCssVariables.font.size.xs};
 `;
 
 const StyledCabecera = styled.div`
@@ -101,7 +123,7 @@ const StyledVacio = styled.div`
   text-align: center;
 `;
 
-export const GraficoRanking = ({ filas, total, alPulsarFila }: GraficoRankingProps) => {
+export const GraficoRanking = ({ filas, total }: GraficoRankingProps) => {
   if (filas.length === 0) {
     return <StyledVacio>No hay datos en este periodo</StyledVacio>;
   }
@@ -113,29 +135,40 @@ export const GraficoRanking = ({ filas, total, alPulsarFila }: GraficoRankingPro
 
   return (
     <StyledLista>
-      {filas.map((fila) => (
-        <StyledFila
-          key={fila.id}
-          pulsable={Boolean(alPulsarFila)}
-          onClick={() => alPulsarFila?.(fila.id)}
-        >
-          <StyledCabecera>
-            <StyledNombre title={fila.nombre}>{fila.nombre}</StyledNombre>
-            <StyledImporte>
-              {formatearEuros(fila.valor)}
-              {total !== undefined && total > 0 && (
-                <StyledPeso>{formatearPorcentaje(fila.valor, total)}</StyledPeso>
-              )}
-            </StyledImporte>
-          </StyledCabecera>
-          <StyledCarril>
-            <StyledBarra
-              color={fila.color}
-              style={{ width: `${(Math.abs(fila.valor) / mayor) * 100}%` }}
-            />
-          </StyledCarril>
-        </StyledFila>
-      ))}
+      {filas.map((fila) => {
+        const cuerpo = (
+          <>
+              <StyledCabecera>
+                <StyledNombre title={fila.nombre}>{fila.nombre}</StyledNombre>
+                <StyledImporte>
+                  {formatearEuros(fila.valor)}
+                  {total !== undefined && total > 0 && (
+                    <StyledPeso>{formatearPorcentaje(fila.valor, total)}</StyledPeso>
+                  )}
+                </StyledImporte>
+              </StyledCabecera>
+              {fila.detalle && <StyledDetalleFila>{fila.detalle}</StyledDetalleFila>}
+              <StyledCarril>
+                <StyledBarra
+                  color={fila.color}
+                  style={{ width: `${(Math.abs(fila.valor) / mayor) * 100}%` }}
+                />
+              </StyledCarril>
+          </>
+        );
+
+        return (
+          <StyledFila key={fila.id}>
+            {fila.enlace ? (
+              <Link to={fila.enlace} className={`${contenidoFila} ${contenidoPulsable}`}>
+                {cuerpo}
+              </Link>
+            ) : (
+              <div className={contenidoFila}>{cuerpo}</div>
+            )}
+          </StyledFila>
+        );
+      })}
     </StyledLista>
   );
 };
