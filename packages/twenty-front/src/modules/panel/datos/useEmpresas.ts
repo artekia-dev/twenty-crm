@@ -14,6 +14,8 @@ type EmpresaPanel = {
   id: string;
   name: string | null;
   nif: string | null;
+  codigo: string | null;
+  activa: boolean | null;
 };
 
 /** Sin espacios, guiones ni puntos, y en mayusculas: "es-b12345678" → "B12345678". */
@@ -32,7 +34,7 @@ export type EmpresaConocida = { id: string; nombre: string };
 export const useEmpresas = () => {
   const { records } = useFindManyRecords<EmpresaPanel>({
     objectNameSingular: 'company',
-    recordGqlFields: { id: true, name: true, nif: true },
+    recordGqlFields: { id: true, name: true, nif: true, codigo: true, activa: true },
     limit: 200,
   });
 
@@ -41,6 +43,7 @@ export const useEmpresas = () => {
     // Por id ademas de por NIF: la sociedad de una factura viene por id, y sin
     // esto el reparto por sociedad mostraria UUIDs.
     const porId = new Map<string, EmpresaConocida>();
+    const delGrupo: EmpresaConocida[] = [];
 
     for (const empresa of records) {
       if (!empresa.name) continue;
@@ -50,8 +53,15 @@ export const useEmpresas = () => {
 
       if (nif) porNif.set(nif, ficha);
       porId.set(empresa.id, ficha);
+
+      // Las sociedades del grupo llevan codigo interno y carpeta propia; un
+      // proveedor que alguien de de alta como empresa no. Sin este filtro, el
+      // reparto del grupo acabaria listando proveedores con cero.
+      if (empresa.codigo && empresa.activa !== false) delGrupo.push(ficha);
     }
 
-    return { porNif, porId };
+    delGrupo.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+
+    return { porNif, porId, delGrupo };
   }, [records]);
 };

@@ -14,7 +14,8 @@ export type Resumen = {
   importePendiente: number;
   pendientesDePago: number;
   importePendienteDePago: number;
-  conAviso: number;
+  conAvisoSociedad: number;
+  conAvisoTipo: number;
   sinSociedad: number;
   sinDireccion: number;
 };
@@ -58,7 +59,8 @@ export const calcularResumen = (facturas: FacturaPanel[], conIva: boolean): Resu
     importePendiente: 0,
     pendientesDePago: 0,
     importePendienteDePago: 0,
-    conAviso: 0,
+    conAvisoSociedad: 0,
+    conAvisoTipo: 0,
     sinSociedad: 0,
     sinDireccion: 0,
   };
@@ -81,9 +83,12 @@ export const calcularResumen = (facturas: FacturaPanel[], conIva: boolean): Resu
       resumen.importePendienteDePago += importeDe(factura, conIva);
     }
 
-    if (factura.avisoSociedad !== null || factura.avisoTipo !== null) {
-      resumen.conAviso += 1;
-    }
+    // Contados por separado y no en un solo "con aviso": cada cifra del panel
+    // lleva a una lista filtrada, y una cifra que suma dos filtros distintos
+    // nunca coincide con el numero de filas que aparecen al pulsarla. La
+    // primera vez que eso pasa, deja de creerse el panel entero.
+    if (factura.avisoSociedad !== null) resumen.conAvisoSociedad += 1;
+    if (factura.avisoTipo !== null) resumen.conAvisoTipo += 1;
 
     if (factura.sociedadId === null) resumen.sinSociedad += 1;
 

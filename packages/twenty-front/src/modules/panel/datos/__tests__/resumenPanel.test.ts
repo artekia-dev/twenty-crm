@@ -78,7 +78,10 @@ describe('calcularResumen', () => {
     expect(r.importePendienteDePago).toBe(100);
   });
 
-  it('cuenta avisos, huerfanas y sin direccion', () => {
+  // Cada cifra lleva a una lista filtrada: si la cifra sumara los dos tipos de
+  // aviso, al pulsarla apareceria otro numero de filas. Paso de verdad: 9 en el
+  // panel, 7 en la lista.
+  it('cuenta cada tipo de aviso por separado, como el filtro al que lleva', () => {
     const r = calcularResumen([
       factura({ avisoSociedad: 'CIF_NO_COINCIDE' }),
       factura({ avisoTipo: 'VARIOS_EN_ARCHIVO' }),
@@ -87,7 +90,8 @@ describe('calcularResumen', () => {
       factura({ direccion: null }),
     ], false);
 
-    expect(r.conAviso).toBe(2);
+    expect(r.conAvisoSociedad).toBe(1);
+    expect(r.conAvisoTipo).toBe(1);
     expect(r.sinSociedad).toBe(1);
     expect(r.sinDireccion).toBe(2);
   });

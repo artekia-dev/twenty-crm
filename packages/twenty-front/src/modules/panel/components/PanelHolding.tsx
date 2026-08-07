@@ -133,6 +133,11 @@ const IVA = [
   { valor: 'con' as const, etiqueta: 'Con IVA', etiquetaCorta: 'Total' },
 ];
 
+const SOCIEDADES_MOSTRADAS = [
+  { valor: 'todas' as const, etiqueta: 'Todas', etiquetaCorta: 'Todas' },
+  { valor: 'conMovimiento' as const, etiqueta: 'Con movimiento', etiquetaCorta: 'Con mov.' },
+];
+
 const ORDENES: { valor: OrdenRanking; etiqueta: string; etiquetaCorta: string }[] = [
   { valor: 'importe', etiqueta: 'Por importe', etiquetaCorta: '€' },
   { valor: 'documentos', etiqueta: 'Por nº de facturas', etiquetaCorta: 'Nº' },
@@ -148,6 +153,7 @@ export const PanelHolding = () => {
   const [iva, setIva] = useState<'sin' | 'con'>('sin');
 
   const conIva = iva === 'con';
+  const [verTodasLasSociedades, setVerTodasLasSociedades] = useState(true);
 
   const { facturas, cargando, error, desde } = usePanelFacturas(periodo);
   const empresas = useEmpresas();
@@ -206,21 +212,37 @@ export const PanelHolding = () => {
     [facturas, conIva],
   );
 
-  const porSociedad = useMemo(
-    () =>
-      agruparPor(
-        facturas,
-        (f) =>
-          f.sociedadId
-            ? {
-                id: f.sociedadId,
-                nombre: empresas.porId.get(f.sociedadId)?.nombre ?? 'Sin nombre',
-              }
-            : null,
-        'importe',
-        conIva,
-      ),
-    [facturas, conIva, empresas],
+  // TODAS las sociedades del grupo, tengan o no movimiento en el periodo.
+  //
+  // Agrupar solo por las facturas dejaba fuera a las que no han registrado
+  // nada, y eso es justo lo que se quiere ver desde la holding: una sociedad
+  // sin una sola factura este trimestre no es un hueco en el grafico, es un
+  // dato. Las de cero van al final, que es donde estorban menos.
+  const porSociedad = useMemo(() => {
+    const conMovimiento = agruparPor(
+      facturas,
+      (f) =>
+        f.sociedadId
+          ? {
+              id: f.sociedadId,
+              nombre: empresas.porId.get(f.sociedadId)?.nombre ?? 'Sin nombre',
+            }
+          : null,
+      'importe',
+      conIva,
+    );
+
+    const vistas = new Set(conMovimiento.map((s) => s.id));
+    const paradas = empresas.delGrupo
+      .filter((e) => !vistas.has(e.id))
+      .map((e) => ({ id: e.id, nombre: e.nombre, importe: 0, documentos: 0 }));
+
+    return [...conMovimiento, ...paradas];
+  }, [facturas, conIva, empresas]);
+
+  const sociedadesVisibles = useMemo(
+    () => (verTodasLasSociedades ? porSociedad : porSociedad.filter((s) => s.documentos > 0)),
+    [porSociedad, verTodasLasSociedades],
   );
 
   const totalProveedores = proveedores.reduce((suma, p) => suma + p.importe, 0);
@@ -433,16 +455,27 @@ export const PanelHolding = () => {
           <TarjetaGrafico
             titulo="Reparto por sociedad"
             descripcion="Qué parte del movimiento del grupo lleva cada una"
+            controles={
+              <GrupoBotones
+                opciones={SOCIEDADES_MOSTRADAS}
+                seleccion={verTodasLasSociedades ? 'todas' : 'conMovimiento'}
+                alCambiar={(v) => setVerTodasLasSociedades(v === 'todas')}
+                etiquetaAccesible="Qué sociedades se muestran"
+              />
+            }
           >
             <GraficoRanking
-              filas={porSociedad.map((soc, i) => ({
+              filas={sociedadesVisibles.map((soc, i) => ({
                 id: soc.id,
                 nombre: soc.nombre,
-                detalle: `${formatearEntero(soc.documentos)} ${
-                  soc.documentos === 1 ? 'factura' : 'facturas'
-                }`,
+                detalle:
+                  soc.documentos === 0
+                    ? 'Sin movimiento en el periodo'
+                    : `${formatearEntero(soc.documentos)} ${
+                        soc.documentos === 1 ? 'factura' : 'facturas'
+                      }`,
                 valor: soc.importe,
-                color: colorDeCategoria(i),
+                color: soc.documentos === 0 ? COLORES.neutro : colorDeCategoria(i),
                 enlace: enlaceFacturas.deSociedad(desde, soc.id),
               }))}
               total={porSociedad.reduce((suma, s) => suma + s.importe, 0)}
@@ -450,7 +483,8 @@ export const PanelHolding = () => {
           </TarjetaGrafico>
         )}
 
-        {(resumen.conAviso > 0 ||
+        {(resumen.conAvisoSociedad > 0 ||
+          resumen.conAvisoTipo > 0 ||
           resumen.sinSociedad > 0 ||
           resumen.sinDireccion > 0) && (
           <TarjetaGrafico
@@ -459,11 +493,18 @@ export const PanelHolding = () => {
           >
             <StyledCifras>
               <TarjetaKpi
-                titulo="Con aviso"
-                valor={formatearEntero(resumen.conAviso)}
-                detalle="Datos maestros o lectura a confirmar"
-                esAviso={resumen.conAviso > 0}
-                enlace={enlaceFacturas.conAviso(desde)}
+                titulo="Aviso de sociedad"
+                valor={formatearEntero(resumen.conAvisoSociedad)}
+                detalle="El CIF no casa con la ficha, o la carpeta dice otra"
+                esAviso={resumen.conAvisoSociedad > 0}
+                enlace={enlaceFacturas.conAvisoSociedad(desde)}
+              />
+              <TarjetaKpi
+                titulo="Aviso de documento"
+                valor={formatearEntero(resumen.conAvisoTipo)}
+                detalle="Ilegible, tipo inesperado o varios en un PDF"
+                esAviso={resumen.conAvisoTipo > 0}
+                enlace={enlaceFacturas.conAvisoTipo(desde)}
               />
               <TarjetaKpi
                 titulo="Sin sociedad"

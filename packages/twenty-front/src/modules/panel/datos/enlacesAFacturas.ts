@@ -41,10 +41,16 @@ export const enlaceFacturas = {
       pagada: { IS: 'false' },
     }),
 
-  conAviso: (desde: Date): string =>
+  conAvisoSociedad: (desde: Date): string =>
     enlace({
       fechaEmision: { IS_AFTER: iso(desde) },
       avisoSociedad: { IS_NOT_EMPTY: '' },
+    }),
+
+  conAvisoTipo: (desde: Date): string =>
+    enlace({
+      fechaEmision: { IS_AFTER: iso(desde) },
+      avisoTipo: { IS_NOT_EMPTY: '' },
     }),
 
   sinSociedad: (desde: Date): string =>
